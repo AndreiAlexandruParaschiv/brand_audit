@@ -20,6 +20,24 @@ export default function BrandAudit() {
   const [currentPhase, setCurrentPhase] = useState(-1);
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [apiKey, setApiKey] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("openai_api_key") || "";
+    }
+    return "";
+  });
+
+  const saveApiKey = (val) => {
+    setApiKey(val);
+    if (typeof window !== "undefined") {
+      if (val.trim()) {
+        localStorage.setItem("openai_api_key", val.trim());
+      } else {
+        localStorage.removeItem("openai_api_key");
+      }
+    }
+  };
 
   const runAudit = async () => {
     if (!brand.trim()) return;
@@ -44,7 +62,7 @@ export default function BrandAudit() {
       const res = await fetch("/api/brand-audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ args }),
+        body: JSON.stringify({ args, apiKey: apiKey.trim() || undefined }),
       });
 
       clearInterval(phaseTimer);
@@ -77,10 +95,47 @@ export default function BrandAudit() {
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f8fafc", margin: 0 }}>🔍 Brand Audit Tool</h1>
-          <p style={{ color: "#94a3b8", marginTop: 6, fontSize: 14 }}>Off-site brand reputation, visibility & competitive analysis</p>
+        <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f8fafc", margin: 0 }}>🔍 Brand Audit Tool</h1>
+            <p style={{ color: "#94a3b8", marginTop: 6, fontSize: 14 }}>Off-site brand reputation, visibility & competitive analysis</p>
+          </div>
+          <button
+            onClick={() => setShowApiKey(!showApiKey)}
+            style={{ background: apiKey.trim() ? "#1e3a2e" : "#1e293b", border: `1px solid ${apiKey.trim() ? "#22c55e44" : "#334155"}`, borderRadius: 8, padding: "8px 14px", color: apiKey.trim() ? "#22c55e" : "#94a3b8", fontSize: 12, cursor: "pointer", flexShrink: 0 }}
+          >
+            {apiKey.trim() ? "API Key Set" : "Set API Key"}
+          </button>
         </div>
+
+        {/* API Key Panel */}
+        {showApiKey && (
+          <div style={{ background: "#1e293b", borderRadius: 12, padding: 18, border: "1px solid #334155", marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>
+              OPENAI API KEY <span style={{ color: "#475569" }}>(stored in your browser only, never sent to our servers)</span>
+            </label>
+            <div style={{ display: "flex", gap: 10 }}>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={e => saveApiKey(e.target.value)}
+                placeholder="sk-proj-..."
+                style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 14, outline: "none", fontFamily: "monospace" }}
+              />
+              {apiKey.trim() && (
+                <button
+                  onClick={() => saveApiKey("")}
+                  style={{ background: "#450a0a", border: "1px solid #dc262644", borderRadius: 8, padding: "8px 14px", color: "#fca5a5", fontSize: 12, cursor: "pointer" }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <p style={{ fontSize: 11, color: "#475569", margin: "8px 0 0" }}>
+              Your key is saved in localStorage and sent only to this app's backend to call OpenAI. It is never logged or stored server-side.
+            </p>
+          </div>
+        )}
 
         {/* Input */}
         <div style={card}>

@@ -2,15 +2,16 @@
 // Uses OpenAI Responses API with web_search to gather real data
 
 export async function POST(req) {
-  const { args } = await req.json();
+  const { args, apiKey: userApiKey } = await req.json();
 
   if (!args?.trim()) {
     return Response.json({ error: "Brand name is required." }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  // User-provided key takes priority, then server env var
+  const apiKey = userApiKey?.trim() || process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: "OPENAI_API_KEY is not set." }, { status: 500 });
+    return Response.json({ error: "No API key available. Please enter your OpenAI API key in the settings panel." }, { status: 400 });
   }
 
   const systemPrompt = `You are a senior brand strategist and digital reputation analyst.
