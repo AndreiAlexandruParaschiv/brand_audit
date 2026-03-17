@@ -8,9 +8,9 @@ export async function POST(req) {
     return Response.json({ error: "Brand name is required." }, { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: "ANTHROPIC_API_KEY is not set." }, { status: 500 });
+    return Response.json({ error: "OPENAI_API_KEY is not set." }, { status: 500 });
   }
 
   const systemPrompt = `You are a senior brand strategist and digital reputation analyst.
@@ -82,23 +82,24 @@ Return a JSON object with this exact structure:
 }`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "gpt-4o",
         max_tokens: 4000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
       }),
     });
 
     const data = await res.json();
-    const text = data.content?.map(b => b.text || "").join("") || "";
+    const text = data.choices?.[0]?.message?.content || "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
