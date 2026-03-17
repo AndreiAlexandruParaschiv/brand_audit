@@ -107,7 +107,8 @@ Return a JSON object with this exact structure:
 
     if (provider === "azure") {
       // Azure OpenAI — Chat Completions API (no web search available)
-      const azureBase = userAzureEndpoint?.trim() || process.env.AZURE_OPENAI_ENDPOINT;
+      console.log("Azure config received:", { hasEndpoint: !!userAzureEndpoint, hasDeployment: !!userAzureDeployment, hasKey: !!apiKey });
+      const azureBase = (userAzureEndpoint?.trim() || process.env.AZURE_OPENAI_ENDPOINT || "").replace(/\/+$/, "");
       const apiVersion = userAzureApiVersion?.trim() || process.env.AZURE_API_VERSION || "2024-12-01-preview";
       const deployment = userAzureDeployment?.trim() || process.env.AZURE_COMPLETION_DEPLOYMENT || "gpt-4o";
 
