@@ -82,15 +82,18 @@ Return a JSON object with this exact structure:
 }`;
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const endpoint = process.env.OPENAI_ENDPOINT || "https://api.openai.com/v1";
+    const model = process.env.OPENAI_MODEL || "gpt-4o";
+
+    const res = await fetch(`${endpoint}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
-        max_tokens: 4000,
+        model,
+        max_completion_tokens: 16000,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -99,14 +102,35 @@ Return a JSON object with this exact structure:
     });
 
     const data = await res.json();
+
+    if (!res.ok) {
+      console.error("OpenAI API error:", JSON.stringify(data));
+      return Response.json({ error: data.error?.message || "OpenAI API request failed." }, { status: res.status });
+    }
+
+    const finish = data.choices?.[0]?.finish_reason;
     const text = data.choices?.[0]?.message?.content || "";
+
+    console.log("OpenAI finish_reason:", finish);
+    console.log("OpenAI response length:", text.length);
+
+    if (!text) {
+      console.error("Empty response from OpenAI. Full data:", JSON.stringify(data).slice(0, 500));
+      return Response.json({ error: "Empty response from OpenAI." }, { status: 502 });
+    }
+
+    if (finish === "length") {
+      console.error("Response was truncated (hit token limit).");
+      return Response.json({ error: "Response was truncated. Try a simpler query." }, { status: 502 });
+    }
+
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
     return Response.json(parsed);
   } catch (e) {
     console.error("Brand audit error:", e);
-    return Response.json({ error: "Failed to generate audit." }, { status: 500 });
+    return Response.json({ error: e.message || "Failed to generate audit." }, { status: 500 });
   }
 }
 
