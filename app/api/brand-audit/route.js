@@ -32,7 +32,8 @@ Always respond with a valid JSON object only — no markdown fences, no preamble
   const userPrompt = `Conduct a comprehensive off-site brand audit for: ${args}
 
 The first value is the primary brand. Comma-separated values after are competitors.
-If no competitors were given, identify 2-3 real competitors yourself.
+IMPORTANT: Only use the competitors explicitly provided. Do NOT add extra competitors beyond what was given.
+If and ONLY if no competitors were provided at all, identify 2-3 real competitors yourself and set "auto_identified_competitors" to true.
 
 Gather data about:
 - Reviews on Trustpilot, G2, Capterra, Google Reviews

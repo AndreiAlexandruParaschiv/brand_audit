@@ -402,8 +402,8 @@ export default function BrandAudit() {
                         <p style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600, margin: "0 0 4px" }}>{rec.what}</p>
                         <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 6px" }}>{rec.why}</p>
                         <div style={{ display: "flex", gap: 6 }}>
-                          <span style={{ fontSize: 11, color: impactColor(rec.impact), background: impactColor(rec.impact) + "22", padding: "2px 7px", borderRadius: 4 }}>Impact: {rec.impact}</span>
-                          <span style={{ fontSize: 11, color: "#94a3b8", background: "#1e293b", padding: "2px 7px", borderRadius: 4 }}>Effort: {rec.effort}</span>
+                          <span style={{ fontSize: 11, color: impactColor(rec.impact || "medium"), background: impactColor(rec.impact || "medium") + "22", padding: "2px 7px", borderRadius: 4 }}>Impact: {rec.impact || "n/a"}</span>
+                          <span style={{ fontSize: 11, color: "#94a3b8", background: "#1e293b", padding: "2px 7px", borderRadius: 4 }}>Effort: {rec.effort || "n/a"}</span>
                         </div>
                       </div>
                     ))}
