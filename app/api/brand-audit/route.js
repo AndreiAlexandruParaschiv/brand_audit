@@ -24,58 +24,72 @@ export async function POST(req) {
     return Response.json({ error: "No API key available. Please enter your API key in the settings panel." }, { status: 400 });
   }
 
-  const systemPrompt = `You are a senior brand strategist and digital reputation analyst.
-Conduct a real off-site brand audit. Be specific — cite actual sources, real ratings, and real quotes where possible.
-If you cannot find data for a platform, say "No significant presence detected" rather than making up numbers.
-Always respond with a valid JSON object only — no markdown fences, no preamble.`;
+  const systemPrompt = `You are a senior brand strategist and digital reputation analyst with 15+ years of experience.
+You produce extremely thorough, data-rich brand audits. Be specific and detailed — cite actual platform ratings, review counts, specific news stories, known controversies, real campaign names, and concrete data points.
+If you don't have data for a platform, say "No significant presence detected" rather than fabricating numbers.
+Always respond with a valid JSON object only — no markdown fences, no preamble.
+Your analysis must be COMPREHENSIVE — not surface-level. Executives will read this.`;
 
-  const userPrompt = `Conduct a comprehensive off-site brand audit for: ${args}
+  const userPrompt = `Conduct an extremely thorough and comprehensive off-site brand audit for: ${args}
 
 The first value is the primary brand. Comma-separated values after are competitors.
 IMPORTANT: Only use the competitors explicitly provided. Do NOT add extra competitors beyond what was given.
 If and ONLY if no competitors were provided at all, identify 2-3 real competitors yourself and set "auto_identified_competitors" to true.
 
-Gather data about:
-- Reviews on Trustpilot, G2, Capterra, Google Reviews
-- Reddit discussions and sentiment
-- Recent press coverage and news
-- Glassdoor employer ratings
-- LinkedIn and professional mentions
-- Competitor reviews and direct comparisons
+You MUST analyze each of these platforms in depth:
+- Trustpilot: actual star rating, number of reviews, trend direction, common praise/complaints
+- Google Reviews: star rating, review volume, response patterns from the brand
+- Reddit: specific subreddits where the brand is discussed, common threads, sentiment
+- Twitter/X: brand presence, engagement levels, viral moments, crisis history
+- LinkedIn: company page followers, employee advocacy, B2B perception, thought leadership
+- YouTube: official channel subscribers, third-party review videos, comment sentiment
+- Glassdoor: overall rating, CEO approval %, "recommend to a friend" %, top pros and cons
+- News/PR: specific recent stories (last 12 months), tone of coverage, major events
+- G2/Capterra (if B2B/SaaS): category ranking, satisfaction score
+- Instagram/TikTok: follower count, engagement rate, UGC presence
 
-For each data point, use actual numbers, ratings, and quotes where available.
+For EACH platform score justification, include at least one specific data point (e.g., "4.2/5 stars from 12,000 reviews" or "discussed in r/sneakers with mostly positive sentiment").
+
+For top_mentions, include at least 5-6 mentions across different platforms with specific details.
+
+For risks, identify at least 5 specific risks with detailed descriptions referencing actual findings.
+
+For recommendations, provide at least 3 items per time horizon (immediate, short_term, long_term) with specific, actionable steps tied to findings.
+
+For the competitor_matrix, include the primary brand PLUS each competitor with differentiated scores and reasoning.
 
 Return a JSON object with this exact structure:
 {
   "brand": "primary brand name",
-  "competitors": ["competitor1", "competitor2"],
-  "auto_identified_competitors": true or false,
-  "executive_summary": "2-3 sentence overall verdict based on real findings",
+  "competitors": ["only the ones explicitly provided"],
+  "auto_identified_competitors": false,
+  "executive_summary": "3-4 sentence comprehensive verdict covering brand health, biggest strength, biggest risk, and competitive position",
   "sentiment": {
     "positive": 60,
     "negative": 20,
     "neutral": 20,
-    "positive_themes": ["theme1", "theme2", "theme3"],
-    "negative_themes": ["theme1", "theme2"],
+    "positive_themes": ["at least 4-5 specific themes"],
+    "negative_themes": ["at least 3-4 specific themes"],
     "top_mentions": [
-      {"platform": "Reddit", "type": "positive", "summary": "brief description with real quote or data point", "url": "source URL if available"},
-      {"platform": "Trustpilot", "type": "mixed", "summary": "brief description with actual rating", "url": "source URL if available"},
-      {"platform": "LinkedIn", "type": "positive", "summary": "brief description", "url": "source URL if available"}
+      {"platform": "platform name", "type": "positive|negative|neutral|mixed", "summary": "specific description with actual data point or quote", "url": "real URL if known"},
+      {"platform": "...", "type": "...", "summary": "include at least 5-6 mentions total", "url": "..."}
     ]
   },
   "platform_scores": [
-    {"platform": "Twitter/X", "score": 7, "justification": "based on actual findings"},
-    {"platform": "LinkedIn", "score": 8, "justification": "based on actual findings"},
-    {"platform": "Reddit", "score": 6, "justification": "based on actual findings"},
-    {"platform": "Trustpilot", "score": 7, "justification": "based on actual rating found"},
-    {"platform": "Google Reviews", "score": 8, "justification": "based on actual rating found"},
-    {"platform": "News/PR", "score": 6, "justification": "based on actual news coverage found"},
-    {"platform": "YouTube", "score": 5, "justification": "based on actual findings"},
-    {"platform": "Glassdoor", "score": 7, "justification": "based on actual rating found"}
+    {"platform": "Twitter/X", "score": 7, "justification": "detailed justification with specific data point"},
+    {"platform": "LinkedIn", "score": 8, "justification": "detailed justification with specific data point"},
+    {"platform": "Reddit", "score": 6, "justification": "detailed justification with specific data point"},
+    {"platform": "Trustpilot", "score": 7, "justification": "detailed justification with actual rating"},
+    {"platform": "Google Reviews", "score": 8, "justification": "detailed justification with actual rating"},
+    {"platform": "News/PR", "score": 6, "justification": "detailed justification with specific stories"},
+    {"platform": "YouTube", "score": 5, "justification": "detailed justification with specific data point"},
+    {"platform": "Glassdoor", "score": 7, "justification": "detailed justification with actual rating"},
+    {"platform": "Instagram", "score": 7, "justification": "detailed justification with follower/engagement data"},
+    {"platform": "TikTok", "score": 6, "justification": "detailed justification with specific data point"}
   ],
   "competitor_matrix": [
     {
-      "name": "brand name",
+      "name": "primary brand",
       "is_primary": true,
       "overall": 7,
       "reviews": 8,
@@ -83,22 +97,34 @@ Return a JSON object with this exact structure:
       "news": 6,
       "community": 7,
       "employer": 7
+    },
+    {
+      "name": "each competitor gets its own entry",
+      "is_primary": false,
+      "overall": 6,
+      "reviews": 7,
+      "social": 6,
+      "news": 5,
+      "community": 6,
+      "employer": 6
     }
   ],
   "risks": [
-    {"issue": "description based on real findings", "severity": "high", "urgency": "immediate", "action": "what to do"},
-    {"issue": "description based on real findings", "severity": "medium", "urgency": "short-term", "action": "what to do"},
-    {"issue": "description based on real findings", "severity": "low", "urgency": "long-term", "action": "what to do"}
+    {"issue": "specific risk description referencing actual finding", "severity": "critical|high|medium|low", "urgency": "immediate|short-term|long-term", "action": "specific actionable recommendation"},
+    {"issue": "provide at least 5 risks total", "severity": "...", "urgency": "...", "action": "..."}
   ],
   "recommendations": {
     "immediate": [
-      {"what": "action", "why": "reason linked to real finding", "impact": "high", "effort": "low"}
+      {"what": "specific action step", "why": "tied to specific finding from audit", "impact": "high|medium|low", "effort": "high|medium|low"},
+      {"what": "at least 3 items per category", "why": "...", "impact": "...", "effort": "..."}
     ],
     "short_term": [
-      {"what": "action", "why": "reason linked to real finding", "impact": "high", "effort": "medium"}
+      {"what": "specific action step", "why": "tied to specific finding", "impact": "high|medium|low", "effort": "high|medium|low"},
+      {"what": "at least 3 items", "why": "...", "impact": "...", "effort": "..."}
     ],
     "long_term": [
-      {"what": "action", "why": "reason linked to real finding", "impact": "high", "effort": "high"}
+      {"what": "specific action step", "why": "tied to specific finding", "impact": "high|medium|low", "effort": "high|medium|low"},
+      {"what": "at least 3 items", "why": "...", "impact": "...", "effort": "..."}
     ]
   }
 }`;
