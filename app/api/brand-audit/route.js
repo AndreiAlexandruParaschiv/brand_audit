@@ -1,5 +1,5 @@
 // app/api/brand-audit/route.js  (Next.js App Router)
-// For Pages Router, use: pages/api/brand-audit.js  (see note at bottom)
+// Uses OpenAI Responses API with web_search to gather real data
 
 export async function POST(req) {
   const { args } = await req.json();
@@ -14,21 +14,34 @@ export async function POST(req) {
   }
 
   const systemPrompt = `You are a senior brand strategist and digital reputation analyst.
-You will conduct a simulated off-site brand audit using your training knowledge.
-Be specific, use plausible data points, and be honest when data is uncertain.
+Conduct a real off-site brand audit using web search to gather actual, current data.
+Search for real reviews, ratings, news articles, social media mentions, and competitor data.
+Be specific — cite actual sources, real ratings, and real quotes you find.
+If you cannot find data for a platform, say "No significant presence detected" rather than making up numbers.
 Always respond with a valid JSON object only — no markdown fences, no preamble.`;
 
-  const userPrompt = `Conduct a full off-site brand audit for: ${args}
+  const userPrompt = `Conduct a comprehensive off-site brand audit for: ${args}
 
 The first value is the primary brand. Comma-separated values after are competitors.
 If no competitors were given, identify 2-3 real competitors yourself.
+
+Use web search extensively to gather REAL data:
+- Search for "[brand name] reviews" on Trustpilot, G2, Capterra, Google Reviews
+- Search for "[brand name] site:reddit.com" for Reddit discussions
+- Search for "[brand name] news" for recent press coverage
+- Search for "[brand name] Glassdoor" for employer ratings
+- Search for "[brand name] site:linkedin.com" for professional mentions
+- Search for competitor reviews and comparisons
+- Search for "[brand name] vs [competitor]" for direct comparisons
+
+For each data point, use the actual numbers, ratings, and quotes you find in search results.
 
 Return a JSON object with this exact structure:
 {
   "brand": "primary brand name",
   "competitors": ["competitor1", "competitor2"],
   "auto_identified_competitors": true or false,
-  "executive_summary": "2-3 sentence overall verdict",
+  "executive_summary": "2-3 sentence overall verdict based on real findings",
   "sentiment": {
     "positive": 60,
     "negative": 20,
@@ -36,20 +49,20 @@ Return a JSON object with this exact structure:
     "positive_themes": ["theme1", "theme2", "theme3"],
     "negative_themes": ["theme1", "theme2"],
     "top_mentions": [
-      {"platform": "Reddit", "type": "positive", "summary": "brief description"},
-      {"platform": "Trustpilot", "type": "mixed", "summary": "brief description"},
-      {"platform": "LinkedIn", "type": "positive", "summary": "brief description"}
+      {"platform": "Reddit", "type": "positive", "summary": "brief description with real quote or data point", "url": "source URL if available"},
+      {"platform": "Trustpilot", "type": "mixed", "summary": "brief description with actual rating", "url": "source URL if available"},
+      {"platform": "LinkedIn", "type": "positive", "summary": "brief description", "url": "source URL if available"}
     ]
   },
   "platform_scores": [
-    {"platform": "Twitter/X", "score": 7, "justification": "one sentence"},
-    {"platform": "LinkedIn", "score": 8, "justification": "one sentence"},
-    {"platform": "Reddit", "score": 6, "justification": "one sentence"},
-    {"platform": "Trustpilot", "score": 7, "justification": "one sentence"},
-    {"platform": "Google Reviews", "score": 8, "justification": "one sentence"},
-    {"platform": "News/PR", "score": 6, "justification": "one sentence"},
-    {"platform": "YouTube", "score": 5, "justification": "one sentence"},
-    {"platform": "Glassdoor", "score": 7, "justification": "one sentence"}
+    {"platform": "Twitter/X", "score": 7, "justification": "based on actual findings"},
+    {"platform": "LinkedIn", "score": 8, "justification": "based on actual findings"},
+    {"platform": "Reddit", "score": 6, "justification": "based on actual findings"},
+    {"platform": "Trustpilot", "score": 7, "justification": "based on actual rating found"},
+    {"platform": "Google Reviews", "score": 8, "justification": "based on actual rating found"},
+    {"platform": "News/PR", "score": 6, "justification": "based on actual news coverage found"},
+    {"platform": "YouTube", "score": 5, "justification": "based on actual findings"},
+    {"platform": "Glassdoor", "score": 7, "justification": "based on actual rating found"}
   ],
   "competitor_matrix": [
     {
@@ -64,19 +77,19 @@ Return a JSON object with this exact structure:
     }
   ],
   "risks": [
-    {"issue": "description", "severity": "high", "urgency": "immediate", "action": "what to do"},
-    {"issue": "description", "severity": "medium", "urgency": "short-term", "action": "what to do"},
-    {"issue": "description", "severity": "low", "urgency": "long-term", "action": "what to do"}
+    {"issue": "description based on real findings", "severity": "high", "urgency": "immediate", "action": "what to do"},
+    {"issue": "description based on real findings", "severity": "medium", "urgency": "short-term", "action": "what to do"},
+    {"issue": "description based on real findings", "severity": "low", "urgency": "long-term", "action": "what to do"}
   ],
   "recommendations": {
     "immediate": [
-      {"what": "action", "why": "reason", "impact": "high", "effort": "low"}
+      {"what": "action", "why": "reason linked to real finding", "impact": "high", "effort": "low"}
     ],
     "short_term": [
-      {"what": "action", "why": "reason", "impact": "high", "effort": "medium"}
+      {"what": "action", "why": "reason linked to real finding", "impact": "high", "effort": "medium"}
     ],
     "long_term": [
-      {"what": "action", "why": "reason", "impact": "high", "effort": "high"}
+      {"what": "action", "why": "reason linked to real finding", "impact": "high", "effort": "high"}
     ]
   }
 }`;
@@ -85,7 +98,7 @@ Return a JSON object with this exact structure:
     const endpoint = process.env.OPENAI_ENDPOINT || "https://api.openai.com/v1";
     const model = process.env.OPENAI_MODEL || "gpt-4o";
 
-    const res = await fetch(`${endpoint}/chat/completions`, {
+    const res = await fetch(`${endpoint}/responses`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -93,11 +106,10 @@ Return a JSON object with this exact structure:
       },
       body: JSON.stringify({
         model,
-        max_completion_tokens: 16000,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
+        instructions: systemPrompt,
+        input: userPrompt,
+        tools: [{ type: "web_search_preview" }],
+        text: { format: { type: "text" } },
       }),
     });
 
@@ -108,20 +120,26 @@ Return a JSON object with this exact structure:
       return Response.json({ error: data.error?.message || "OpenAI API request failed." }, { status: res.status });
     }
 
-    const finish = data.choices?.[0]?.finish_reason;
-    const text = data.choices?.[0]?.message?.content || "";
+    // Extract text from Responses API output
+    let text = "";
+    if (data.output) {
+      for (const item of data.output) {
+        if (item.type === "message" && item.content) {
+          for (const block of item.content) {
+            if (block.type === "output_text") {
+              text += block.text;
+            }
+          }
+        }
+      }
+    }
 
-    console.log("OpenAI finish_reason:", finish);
+    console.log("OpenAI status:", data.status);
     console.log("OpenAI response length:", text.length);
 
     if (!text) {
-      console.error("Empty response from OpenAI. Full data:", JSON.stringify(data).slice(0, 500));
+      console.error("Empty response from OpenAI. Full data:", JSON.stringify(data).slice(0, 1000));
       return Response.json({ error: "Empty response from OpenAI." }, { status: 502 });
-    }
-
-    if (finish === "length") {
-      console.error("Response was truncated (hit token limit).");
-      return Response.json({ error: "Response was truncated. Try a simpler query." }, { status: 502 });
     }
 
     const clean = text.replace(/```json|```/g, "").trim();
@@ -133,14 +151,3 @@ Return a JSON object with this exact structure:
     return Response.json({ error: e.message || "Failed to generate audit." }, { status: 500 });
   }
 }
-
-/* ─── Pages Router alternative ──────────────────────────────────────────────
-   If you're using pages/api/brand-audit.js instead, replace the export with:
-
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
-  const { args } = req.body;
-  // ... same logic above ...
-  return res.status(200).json(parsed);
-}
-──────────────────────────────────────────────────────────────────────────── */

@@ -38,7 +38,7 @@ export default function BrandAudit() {
         if (p >= PHASES.length - 1) { clearInterval(phaseTimer); return p; }
         return p + 1;
       });
-    }, 1800);
+    }, 4000);
 
     try {
       const res = await fetch("/api/brand-audit", {
@@ -165,7 +165,7 @@ export default function BrandAudit() {
                   </div>
                 ))}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
                 <div>
                   <p style={{ fontSize: 12, color: "#22c55e", margin: "0 0 6px" }}>POSITIVE THEMES</p>
                   {report.sentiment?.positive_themes?.map((t, i) => (
@@ -179,6 +179,23 @@ export default function BrandAudit() {
                   ))}
                 </div>
               </div>
+              {report.sentiment?.top_mentions?.length > 0 && (
+                <div>
+                  <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 8px" }}>KEY MENTIONS</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {report.sentiment.top_mentions.map((m, i) => (
+                      <div key={i} style={{ background: "#0f172a", borderRadius: 6, padding: "8px 12px", fontSize: 12 }}>
+                        <span style={{ color: m.type === "positive" ? "#22c55e" : m.type === "negative" ? "#ef4444" : "#f59e0b", fontWeight: 600 }}>{m.platform}</span>
+                        <span style={{ color: "#475569" }}> · {m.type} · </span>
+                        <span style={{ color: "#94a3b8" }}>{m.summary}</span>
+                        {m.url && (
+                          <a href={m.url} target="_blank" rel="noopener noreferrer" style={{ color: "#6366f1", marginLeft: 6, textDecoration: "none" }}>↗</a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Platform Scores */}
