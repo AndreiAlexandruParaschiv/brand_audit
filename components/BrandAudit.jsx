@@ -29,6 +29,14 @@ export default function BrandAudit() {
     if (typeof window !== "undefined") return localStorage.getItem("audit_api_key") || "";
     return "";
   });
+  const [azureEndpoint, setAzureEndpoint] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("audit_azure_endpoint") || "";
+    return "";
+  });
+  const [azureDeployment, setAzureDeployment] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("audit_azure_deployment") || "gpt-4o";
+    return "gpt-4o";
+  });
 
   const saveProvider = (val) => {
     setProvider(val);
@@ -40,6 +48,17 @@ export default function BrandAudit() {
       if (val.trim()) localStorage.setItem("audit_api_key", val.trim());
       else localStorage.removeItem("audit_api_key");
     }
+  };
+  const saveAzureEndpoint = (val) => {
+    setAzureEndpoint(val);
+    if (typeof window !== "undefined") {
+      if (val.trim()) localStorage.setItem("audit_azure_endpoint", val.trim());
+      else localStorage.removeItem("audit_azure_endpoint");
+    }
+  };
+  const saveAzureDeployment = (val) => {
+    setAzureDeployment(val);
+    if (typeof window !== "undefined") localStorage.setItem("audit_azure_deployment", val);
   };
 
   const runAudit = async () => {
@@ -65,7 +84,13 @@ export default function BrandAudit() {
       const res = await fetch("/api/brand-audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ args, apiKey: apiKey.trim() || undefined, provider }),
+        body: JSON.stringify({
+          args,
+          apiKey: apiKey.trim() || undefined,
+          provider,
+          azureEndpoint: provider === "azure" ? azureEndpoint.trim() || undefined : undefined,
+          azureDeployment: provider === "azure" ? azureDeployment.trim() || undefined : undefined,
+        }),
       });
 
       clearInterval(phaseTimer);
@@ -158,9 +183,28 @@ export default function BrandAudit() {
               </div>
               <p style={{ fontSize: 11, color: "#475569", margin: "8px 0 0" }}>
                 Your key is saved in localStorage and sent only to this app's backend. Never logged or stored server-side.
-                {provider === "azure" && " Azure endpoint and deployment are configured server-side."}
               </p>
             </div>
+            {provider === "azure" && (
+              <div style={{ marginTop: 14 }}>
+                <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>AZURE ENDPOINT</label>
+                <input
+                  value={azureEndpoint}
+                  onChange={e => saveAzureEndpoint(e.target.value)}
+                  placeholder="https://your-resource.openai.azure.com"
+                  style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "monospace" }}
+                />
+                <div style={{ marginTop: 10 }}>
+                  <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>DEPLOYMENT NAME</label>
+                  <input
+                    value={azureDeployment}
+                    onChange={e => saveAzureDeployment(e.target.value)}
+                    placeholder="gpt-4o"
+                    style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "monospace" }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -2,7 +2,7 @@
 // Supports both standard OpenAI (with web search) and Azure OpenAI
 
 export async function POST(req) {
-  const { args, apiKey: userApiKey, provider: userProvider } = await req.json();
+  const { args, apiKey: userApiKey, provider: userProvider, azureEndpoint: userAzureEndpoint, azureDeployment: userAzureDeployment, azureApiVersion: userAzureApiVersion } = await req.json();
 
   if (!args?.trim()) {
     return Response.json({ error: "Brand name is required." }, { status: 400 });
@@ -107,9 +107,13 @@ Return a JSON object with this exact structure:
 
     if (provider === "azure") {
       // Azure OpenAI — Chat Completions API (no web search available)
-      const azureBase = process.env.AZURE_OPENAI_ENDPOINT;
-      const apiVersion = process.env.AZURE_API_VERSION || "2024-12-01-preview";
-      const deployment = process.env.AZURE_COMPLETION_DEPLOYMENT || "gpt-4o";
+      const azureBase = userAzureEndpoint?.trim() || process.env.AZURE_OPENAI_ENDPOINT;
+      const apiVersion = userAzureApiVersion?.trim() || process.env.AZURE_API_VERSION || "2024-12-01-preview";
+      const deployment = userAzureDeployment?.trim() || process.env.AZURE_COMPLETION_DEPLOYMENT || "gpt-4o";
+
+      if (!azureBase) {
+        return Response.json({ error: "Azure endpoint is not configured. Please enter it in the settings panel." }, { status: 400 });
+      }
       const url = `${azureBase}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
 
       res = await fetch(url, {
