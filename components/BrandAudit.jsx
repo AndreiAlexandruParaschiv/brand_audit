@@ -20,22 +20,25 @@ export default function BrandAudit() {
   const [currentPhase, setCurrentPhase] = useState(-1);
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [provider, setProvider] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("audit_provider") || "openai";
+    return "openai";
+  });
   const [apiKey, setApiKey] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("openai_api_key") || "";
-    }
+    if (typeof window !== "undefined") return localStorage.getItem("audit_api_key") || "";
     return "";
   });
 
+  const saveProvider = (val) => {
+    setProvider(val);
+    if (typeof window !== "undefined") localStorage.setItem("audit_provider", val);
+  };
   const saveApiKey = (val) => {
     setApiKey(val);
     if (typeof window !== "undefined") {
-      if (val.trim()) {
-        localStorage.setItem("openai_api_key", val.trim());
-      } else {
-        localStorage.removeItem("openai_api_key");
-      }
+      if (val.trim()) localStorage.setItem("audit_api_key", val.trim());
+      else localStorage.removeItem("audit_api_key");
     }
   };
 
@@ -62,7 +65,7 @@ export default function BrandAudit() {
       const res = await fetch("/api/brand-audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ args, apiKey: apiKey.trim() || undefined }),
+        body: JSON.stringify({ args, apiKey: apiKey.trim() || undefined, provider }),
       });
 
       clearInterval(phaseTimer);
@@ -101,39 +104,63 @@ export default function BrandAudit() {
             <p style={{ color: "#94a3b8", marginTop: 6, fontSize: 14 }}>Off-site brand reputation, visibility & competitive analysis</p>
           </div>
           <button
-            onClick={() => setShowApiKey(!showApiKey)}
+            onClick={() => setShowSettings(!showSettings)}
             style={{ background: apiKey.trim() ? "#1e3a2e" : "#1e293b", border: `1px solid ${apiKey.trim() ? "#22c55e44" : "#334155"}`, borderRadius: 8, padding: "8px 14px", color: apiKey.trim() ? "#22c55e" : "#94a3b8", fontSize: 12, cursor: "pointer", flexShrink: 0 }}
           >
-            {apiKey.trim() ? "API Key Set" : "Set API Key"}
+            {apiKey.trim() ? `${provider === "azure" ? "Azure" : "OpenAI"} Key Set` : "Settings"}
           </button>
         </div>
 
-        {/* API Key Panel */}
-        {showApiKey && (
+        {/* Settings Panel */}
+        {showSettings && (
           <div style={{ background: "#1e293b", borderRadius: 12, padding: 18, border: "1px solid #334155", marginBottom: 20 }}>
-            <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>
-              OPENAI API KEY <span style={{ color: "#475569" }}>(stored in your browser only, never sent to our servers)</span>
-            </label>
-            <div style={{ display: "flex", gap: 10 }}>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={e => saveApiKey(e.target.value)}
-                placeholder="sk-proj-..."
-                style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 14, outline: "none", fontFamily: "monospace" }}
-              />
-              {apiKey.trim() && (
-                <button
-                  onClick={() => saveApiKey("")}
-                  style={{ background: "#450a0a", border: "1px solid #dc262644", borderRadius: 8, padding: "8px 14px", color: "#fca5a5", fontSize: 12, cursor: "pointer" }}
-                >
-                  Clear
-                </button>
-              )}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>PROVIDER</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[["openai", "OpenAI (with web search)"], ["azure", "Azure OpenAI"]].map(([val, label]) => (
+                  <button
+                    key={val}
+                    onClick={() => saveProvider(val)}
+                    style={{
+                      background: provider === val ? "#6366f1" : "#0f172a",
+                      border: `1px solid ${provider === val ? "#6366f1" : "#334155"}`,
+                      borderRadius: 8, padding: "8px 16px",
+                      color: provider === val ? "#fff" : "#94a3b8",
+                      fontSize: 13, cursor: "pointer",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p style={{ fontSize: 11, color: "#475569", margin: "8px 0 0" }}>
-              Your key is saved in localStorage and sent only to this app's backend to call OpenAI. It is never logged or stored server-side.
-            </p>
+            <div>
+              <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>
+                {provider === "azure" ? "AZURE API KEY" : "OPENAI API KEY"}{" "}
+                <span style={{ color: "#475569" }}>(stored in your browser only)</span>
+              </label>
+              <div style={{ display: "flex", gap: 10 }}>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={e => saveApiKey(e.target.value)}
+                  placeholder={provider === "azure" ? "Your Azure OpenAI key..." : "sk-proj-..."}
+                  style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 14, outline: "none", fontFamily: "monospace" }}
+                />
+                {apiKey.trim() && (
+                  <button
+                    onClick={() => saveApiKey("")}
+                    style={{ background: "#450a0a", border: "1px solid #dc262644", borderRadius: 8, padding: "8px 14px", color: "#fca5a5", fontSize: 12, cursor: "pointer" }}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <p style={{ fontSize: 11, color: "#475569", margin: "8px 0 0" }}>
+                Your key is saved in localStorage and sent only to this app's backend. Never logged or stored server-side.
+                {provider === "azure" && " Azure endpoint and deployment are configured server-side."}
+              </p>
+            </div>
           </div>
         )}
 

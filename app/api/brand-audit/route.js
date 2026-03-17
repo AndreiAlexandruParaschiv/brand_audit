@@ -1,23 +1,31 @@
 // app/api/brand-audit/route.js  (Next.js App Router)
-// Uses OpenAI Responses API with web_search to gather real data
+// Supports both standard OpenAI (with web search) and Azure OpenAI
 
 export async function POST(req) {
-  const { args, apiKey: userApiKey } = await req.json();
+  const { args, apiKey: userApiKey, provider: userProvider } = await req.json();
 
   if (!args?.trim()) {
     return Response.json({ error: "Brand name is required." }, { status: 400 });
   }
 
-  // User-provided key takes priority, then server env var
-  const apiKey = userApiKey?.trim() || process.env.OPENAI_API_KEY;
+  // Determine provider: user choice > env detection > default
+  const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
+  const azureKey = process.env.AZURE_OPENAI_KEY;
+  const provider = userProvider || (azureEndpoint && azureKey ? "azure" : "openai");
+
+  let apiKey;
+  if (provider === "azure") {
+    apiKey = userApiKey?.trim() || azureKey;
+  } else {
+    apiKey = userApiKey?.trim() || process.env.OPENAI_API_KEY;
+  }
+
   if (!apiKey) {
-    return Response.json({ error: "No API key available. Please enter your OpenAI API key in the settings panel." }, { status: 400 });
+    return Response.json({ error: "No API key available. Please enter your API key in the settings panel." }, { status: 400 });
   }
 
   const systemPrompt = `You are a senior brand strategist and digital reputation analyst.
-Conduct a real off-site brand audit using web search to gather actual, current data.
-Search for real reviews, ratings, news articles, social media mentions, and competitor data.
-Be specific — cite actual sources, real ratings, and real quotes you find.
+Conduct a real off-site brand audit. Be specific — cite actual sources, real ratings, and real quotes where possible.
 If you cannot find data for a platform, say "No significant presence detected" rather than making up numbers.
 Always respond with a valid JSON object only — no markdown fences, no preamble.`;
 
@@ -26,16 +34,15 @@ Always respond with a valid JSON object only — no markdown fences, no preamble
 The first value is the primary brand. Comma-separated values after are competitors.
 If no competitors were given, identify 2-3 real competitors yourself.
 
-Use web search extensively to gather REAL data:
-- Search for "[brand name] reviews" on Trustpilot, G2, Capterra, Google Reviews
-- Search for "[brand name] site:reddit.com" for Reddit discussions
-- Search for "[brand name] news" for recent press coverage
-- Search for "[brand name] Glassdoor" for employer ratings
-- Search for "[brand name] site:linkedin.com" for professional mentions
-- Search for competitor reviews and comparisons
-- Search for "[brand name] vs [competitor]" for direct comparisons
+Gather data about:
+- Reviews on Trustpilot, G2, Capterra, Google Reviews
+- Reddit discussions and sentiment
+- Recent press coverage and news
+- Glassdoor employer ratings
+- LinkedIn and professional mentions
+- Competitor reviews and direct comparisons
 
-For each data point, use the actual numbers, ratings, and quotes you find in search results.
+For each data point, use actual numbers, ratings, and quotes where available.
 
 Return a JSON object with this exact structure:
 {
@@ -96,57 +103,101 @@ Return a JSON object with this exact structure:
 }`;
 
   try {
-    const endpoint = process.env.OPENAI_ENDPOINT || "https://api.openai.com/v1";
-    const model = process.env.OPENAI_MODEL || "gpt-4o";
+    let res;
 
-    const res = await fetch(`${endpoint}/responses`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        instructions: systemPrompt,
-        input: userPrompt,
-        tools: [{ type: "web_search_preview" }],
-        text: { format: { type: "text" } },
-      }),
-    });
+    if (provider === "azure") {
+      // Azure OpenAI — Chat Completions API (no web search available)
+      const azureBase = process.env.AZURE_OPENAI_ENDPOINT;
+      const apiVersion = process.env.AZURE_API_VERSION || "2024-12-01-preview";
+      const deployment = process.env.AZURE_COMPLETION_DEPLOYMENT || "gpt-4o";
+      const url = `${azureBase}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
 
-    const data = await res.json();
+      res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": apiKey,
+        },
+        body: JSON.stringify({
+          max_tokens: 16000,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+      });
 
-    if (!res.ok) {
-      console.error("OpenAI API error:", JSON.stringify(data));
-      return Response.json({ error: data.error?.message || "OpenAI API request failed." }, { status: res.status });
-    }
+      const data = await res.json();
 
-    // Extract text from Responses API output
-    let text = "";
-    if (data.output) {
-      for (const item of data.output) {
-        if (item.type === "message" && item.content) {
-          for (const block of item.content) {
-            if (block.type === "output_text") {
-              text += block.text;
+      if (!res.ok) {
+        console.error("Azure OpenAI error:", JSON.stringify(data));
+        return Response.json({ error: data.error?.message || "Azure OpenAI request failed." }, { status: res.status });
+      }
+
+      const text = data.choices?.[0]?.message?.content || "";
+      console.log("Azure finish_reason:", data.choices?.[0]?.finish_reason);
+      console.log("Azure response length:", text.length);
+
+      if (!text) {
+        return Response.json({ error: "Empty response from Azure OpenAI." }, { status: 502 });
+      }
+
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      return Response.json(parsed);
+
+    } else {
+      // Standard OpenAI — Responses API with web search
+      const endpoint = process.env.OPENAI_ENDPOINT || "https://api.openai.com/v1";
+      const model = process.env.OPENAI_MODEL || "gpt-4o";
+
+      res = await fetch(`${endpoint}/responses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          instructions: systemPrompt,
+          input: userPrompt,
+          tools: [{ type: "web_search_preview" }],
+          text: { format: { type: "text" } },
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("OpenAI API error:", JSON.stringify(data));
+        return Response.json({ error: data.error?.message || "OpenAI API request failed." }, { status: res.status });
+      }
+
+      let text = "";
+      if (data.output) {
+        for (const item of data.output) {
+          if (item.type === "message" && item.content) {
+            for (const block of item.content) {
+              if (block.type === "output_text") {
+                text += block.text;
+              }
             }
           }
         }
       }
+
+      console.log("OpenAI status:", data.status);
+      console.log("OpenAI response length:", text.length);
+
+      if (!text) {
+        console.error("Empty response from OpenAI. Full data:", JSON.stringify(data).slice(0, 1000));
+        return Response.json({ error: "Empty response from OpenAI." }, { status: 502 });
+      }
+
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      return Response.json(parsed);
     }
-
-    console.log("OpenAI status:", data.status);
-    console.log("OpenAI response length:", text.length);
-
-    if (!text) {
-      console.error("Empty response from OpenAI. Full data:", JSON.stringify(data).slice(0, 1000));
-      return Response.json({ error: "Empty response from OpenAI." }, { status: 502 });
-    }
-
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
-
-    return Response.json(parsed);
   } catch (e) {
     console.error("Brand audit error:", e);
     return Response.json({ error: e.message || "Failed to generate audit." }, { status: 500 });
