@@ -337,7 +337,7 @@ export default function BrandAudit() {
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                               {cb.rankings?.slice(0, 5).map((r, j) => (
                                 <span key={j} style={tag(r.brand.toLowerCase() === brand.trim().toLowerCase() ? "#1e1b4b" : "#0f172a", r.brand.toLowerCase() === brand.trim().toLowerCase() ? "#a5b4fc" : "#94a3b8")}>
-                                  {r.brand} {r.shareOfVoice.toFixed(0)}%
+                                  {r.brand} {(r.shareOfVoice ?? 0).toFixed(1)}%
                                 </span>
                               ))}
                             </div>

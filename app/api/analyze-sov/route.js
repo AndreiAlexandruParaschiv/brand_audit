@@ -41,7 +41,9 @@ Instructions:
 - Include only brands mentioned at least twice across all answers
 - Sort rankings by shareOfVoice descending
 - Mark the primary brand with isPrimary: true
-- Provide a category-level breakdown showing SoV per category
+- Provide a category-level breakdown showing SoV per category (each category must have its own independent SoV calculation based on mentions within that category only)
+- Every brand that appears in a category's answers MUST have a non-zero shareOfVoice in that category's breakdown
+- shareOfVoice values must be decimal numbers (e.g., 25.5), never 0 for brands that were mentioned
 
 Return this exact JSON structure:
 {
@@ -67,7 +69,7 @@ Return this exact JSON structure:
     const result = await callLLMJSON({
       messages,
       providerConfig,
-      options: { maxTokens: 4096 },
+      options: { maxTokens: 8192 },
     });
     return Response.json(result);
   } catch (e) {
