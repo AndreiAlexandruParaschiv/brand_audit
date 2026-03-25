@@ -4,6 +4,7 @@ import { useState } from "react";
 
 const STEPS = [
   "Brand Discovery",
+  "Market Discovery",
   "Generating Prompts",
   "Executing Prompts",
   "Analyzing Share of Voice",
@@ -14,12 +15,14 @@ export default function BrandAudit() {
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
   const [discovery, setDiscovery] = useState(null);
+  const [market, setMarket] = useState(null);
   const [prompts, setPrompts] = useState(null);
   const [results, setResults] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [collapsedSections, setCollapsedSections] = useState({});
 
   // Azure settings (stored in localStorage)
   const [apiKey, setApiKey] = useState(() => {
@@ -62,36 +65,51 @@ export default function BrandAudit() {
     if (!brand.trim()) return;
     setLoading(true);
     setDiscovery(null);
+    setMarket(null);
     setPrompts(null);
     setResults(null);
     setAnalysis(null);
     setError(null);
     setExpandedCategories({});
+    setCollapsedSections({});
 
     try {
+      // Step 1: Brand Discovery
       setCurrentStep(0);
       const disc = await callAPI("/api/discover", { brand: brand.trim() });
       setDiscovery(disc);
 
+      // Step 2: Market Discovery
       setCurrentStep(1);
+      const mkt = await callAPI("/api/market-discovery", {
+        industry: disc.industry,
+        products: disc.products,
+        services: disc.services,
+      });
+      setMarket(mkt);
+
+      // Step 3: Generate Prompts
+      setCurrentStep(2);
       const prm = await callAPI("/api/generate-prompts", {
         industry: disc.industry,
-        categories: disc.categories,
+        categories: mkt.categories,
       });
       setPrompts(prm);
 
-      setCurrentStep(2);
+      // Step 4: Execute Prompts
+      setCurrentStep(3);
       const execResults = await callAPI("/api/execute-prompts", { prompts: prm.prompts });
       setResults(execResults);
 
-      setCurrentStep(3);
+      // Step 5: Analyze SoV
+      setCurrentStep(4);
       const sov = await callAPI("/api/analyze-sov", {
         brand: brand.trim(),
         results: execResults.results,
       });
       setAnalysis(sov);
 
-      setCurrentStep(4);
+      setCurrentStep(5);
     } catch (e) {
       setError(e.message || "Something went wrong.");
     } finally {
@@ -100,9 +118,11 @@ export default function BrandAudit() {
   };
 
   const toggleCategory = (cat) => setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+  const toggleSection = (key) => setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  const isSectionOpen = (key) => !collapsedSections[key];
 
   const card = { background: "#ffffff", borderRadius: 12, padding: 28, border: "1px solid #e2e8f0", marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" };
-  const sectionTitle = { fontSize: 13, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 700, margin: "0 0 18px" };
+  const sectionTitle = { fontSize: 13, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 700, margin: 0 };
   const tag = (bg, color) => ({ display: "inline-block", fontSize: 13, padding: "5px 14px", borderRadius: 20, fontWeight: 500, background: bg, color, marginRight: 6, marginBottom: 6 });
   const sovBarColor = (sov) => sov >= 30 ? "#16a34a" : sov >= 15 ? "#d97706" : "#dc2626";
   const subtleText = { color: "#64748b", fontSize: 13 };
@@ -204,10 +224,13 @@ export default function BrandAudit() {
                     {i === 0 && currentStep > 0 && discovery?.webSearchUsed && (
                       <span style={{ fontSize: 11, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 4, padding: "2px 6px", marginLeft: 4 }}>web-grounded</span>
                     )}
-                    {i === 2 && currentStep === 2 && loading && prompts && (
+                    {i === 1 && currentStep > 1 && market?.webSearchUsed && (
+                      <span style={{ fontSize: 11, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 4, padding: "2px 6px", marginLeft: 4 }}>web-grounded</span>
+                    )}
+                    {i === 3 && currentStep === 3 && loading && prompts && (
                       <span style={{ fontSize: 13, color: "#94a3b8" }}>({prompts.prompts?.length} prompts)</span>
                     )}
-                    {i === 2 && currentStep > 2 && results?.webSearchUsed && (
+                    {i === 3 && currentStep > 3 && results?.webSearchUsed && (
                       <span style={{ fontSize: 11, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 4, padding: "2px 6px", marginLeft: 4 }}>web-grounded</span>
                     )}
                   </div>
@@ -222,66 +245,88 @@ export default function BrandAudit() {
           <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: 16, color: "#dc2626", marginBottom: 20, fontSize: 14 }}>{error}</div>
         )}
 
-        {/* Step 1: Discovery Results */}
+        {/* Step 1: Brand Profile */}
         {discovery && (
           <div style={card}>
-            <h2 style={sectionTitle}>Brand Profile</h2>
-            <div style={{ marginBottom: 20 }}>
-              <span style={tag("#dbeafe", "#1e40af")}>{discovery.industry}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 28 }}>
-              <div>
-                <p style={{ ...labelStyle, marginBottom: 12 }}>Products</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {discovery.products?.map((p, i) => (
-                    <div key={i} style={{ paddingLeft: 14, borderLeft: "2px solid #e2e8f0" }}>
-                      <span style={{ fontSize: 14, color: "#1e293b", fontWeight: 600 }}>{p.name}</span>{" "}
-                      <span style={{ fontSize: 14, color: "#64748b" }}>{p.description}</span>
-                    </div>
-                  ))}
+            <button onClick={() => toggleSection("profile")} style={{ background: "none", border: "none", padding: 0, margin: "0 0 " + (isSectionOpen("profile") ? "18px" : "0"), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+              <h2 style={sectionTitle}>Brand Profile</h2>
+              <span style={{ color: "#94a3b8", fontSize: 12, transition: "transform 0.2s", transform: isSectionOpen("profile") ? "rotate(0)" : "rotate(-90deg)" }}>{"\u25BC"}</span>
+            </button>
+            {isSectionOpen("profile") && (
+              <>
+                <div style={{ marginBottom: 20 }}>
+                  <span style={tag("#dbeafe", "#1e40af")}>{discovery.industry}</span>
                 </div>
-              </div>
-              <div>
-                <p style={{ ...labelStyle, marginBottom: 12 }}>Services</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {discovery.services?.map((s, i) => (
-                    <div key={i} style={{ paddingLeft: 14, borderLeft: "2px solid #e2e8f0" }}>
-                      <span style={{ fontSize: 14, color: "#1e293b", fontWeight: 600 }}>{s.name}</span>{" "}
-                      <span style={{ fontSize: 14, color: "#64748b" }}>{s.description}</span>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+                  <div>
+                    <p style={{ ...labelStyle, marginBottom: 12 }}>Products</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {discovery.products?.map((p, i) => (
+                        <div key={i} style={{ paddingLeft: 14, borderLeft: "2px solid #e2e8f0" }}>
+                          <span style={{ fontSize: 14, color: "#1e293b", fontWeight: 600 }}>{p.name}</span>{" "}
+                          <span style={{ fontSize: 14, color: "#64748b" }}>{p.description}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Categories & Topics — card grid */}
-            <h3 style={sectionTitle}>Categories & Topics</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-              {discovery.categories?.map((c, i) => (
-                <div key={i} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "18px 20px" }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", margin: "0 0 12px" }}>{c.name}</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {c.topics?.map((t, j) => (
-                      <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 14, color: "#64748b", lineHeight: 1.5 }}>
-                        <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#3b82f6", flexShrink: 0, marginTop: 6 }} />
-                        {t}
-                      </div>
-                    ))}
+                  </div>
+                  <div>
+                    <p style={{ ...labelStyle, marginBottom: 12 }}>Services</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {discovery.services?.map((s, i) => (
+                        <div key={i} style={{ paddingLeft: 14, borderLeft: "2px solid #e2e8f0" }}>
+                          <span style={{ fontSize: 14, color: "#1e293b", fontWeight: 600 }}>{s.name}</span>{" "}
+                          <span style={{ fontSize: 14, color: "#64748b" }}>{s.description}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: Market Categories & Topics */}
+        {market && (
+          <div style={card}>
+            <button onClick={() => toggleSection("categories")} style={{ background: "none", border: "none", padding: 0, margin: "0 0 " + (isSectionOpen("categories") ? "18px" : "0"), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+              <h3 style={sectionTitle}>Market Categories & Topics</h3>
+              <span style={{ color: "#94a3b8", fontSize: 12, transition: "transform 0.2s", transform: isSectionOpen("categories") ? "rotate(0)" : "rotate(-90deg)" }}>{"\u25BC"}</span>
+            </button>
+            {isSectionOpen("categories") && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                {market.categories?.map((c, i) => (
+                  <div key={i} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "18px 20px" }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", margin: "0 0 12px" }}>{c.name}</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {c.topics?.map((t, j) => (
+                        <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 14, color: "#64748b", lineHeight: 1.5 }}>
+                          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#3b82f6", flexShrink: 0, marginTop: 6 }} />
+                          {t}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Step 2: Generated Prompts */}
         {prompts && (
           <div style={card}>
-            <h2 style={sectionTitle}>Generated Prompts <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({prompts.prompts?.length} total)</span></h2>
-            {discovery?.categories?.map((cat, ci) => {
+            <button onClick={() => toggleSection("prompts")} style={{ background: "none", border: "none", padding: 0, margin: "0 0 " + (isSectionOpen("prompts") ? "18px" : "0"), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+              <h2 style={sectionTitle}>Generated Prompts <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({prompts.prompts?.length} total)</span></h2>
+              <span style={{ color: "#94a3b8", fontSize: 12, transition: "transform 0.2s", transform: isSectionOpen("prompts") ? "rotate(0)" : "rotate(-90deg)" }}>{"\u25BC"}</span>
+            </button>
+            {isSectionOpen("prompts") && market?.categories?.map((cat, ci) => {
               const catPrompts = prompts.prompts?.filter(p => p.category === cat.name) || [];
               if (!catPrompts.length) return null;
               const isExpanded = expandedCategories[cat.name];
+              // Group prompts by topic
+              const topicGroups = {};
+              catPrompts.forEach(p => { (topicGroups[p.topic] = topicGroups[p.topic] || []).push(p); });
               return (
                 <div key={ci} style={{ marginBottom: 8 }}>
                   <button onClick={() => toggleCategory(cat.name)} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 16px", color: "#1e293b", fontSize: 14, cursor: "pointer", width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -289,10 +334,17 @@ export default function BrandAudit() {
                     <span style={{ color: "#94a3b8", fontSize: 12 }}>{isExpanded ? "\u25B2" : "\u25BC"}</span>
                   </button>
                   {isExpanded && (
-                    <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                      {catPrompts.map((p, pi) => (
-                        <div key={pi} style={{ fontSize: 14, color: "#475569", lineHeight: 1.6 }}>
-                          <span style={{ color: "#94a3b8", marginRight: 8, fontSize: 12 }}>{p.topic}</span> {p.prompt}
+                    <div style={{ padding: "14px 0 4px", display: "flex", flexDirection: "column", gap: 16 }}>
+                      {Object.entries(topicGroups).map(([topic, tPrompts], ti) => (
+                        <div key={ti}>
+                          <p style={{ fontSize: 11, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700, margin: "0 0 8px", paddingLeft: 2 }}>{topic}</p>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {tPrompts.map((p, pi) => (
+                              <div key={pi} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "#334155", lineHeight: 1.5 }}>
+                                {p.prompt}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -306,12 +358,18 @@ export default function BrandAudit() {
         {/* Step 3: Execution Results */}
         {results && (
           <div style={card}>
-            <h2 style={sectionTitle}>Prompt Results <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({results.totalSucceeded}/{results.totalRequested} completed{results.totalFailed > 0 ? `, ${results.totalFailed} failed` : ""})</span></h2>
-            {discovery?.categories?.map((cat, ci) => {
+            <button onClick={() => toggleSection("results")} style={{ background: "none", border: "none", padding: 0, margin: "0 0 " + (isSectionOpen("results") ? "18px" : "0"), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+              <h2 style={sectionTitle}>Prompt Results <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({results.totalSucceeded}/{results.totalRequested} completed{results.totalFailed > 0 ? `, ${results.totalFailed} failed` : ""})</span></h2>
+              <span style={{ color: "#94a3b8", fontSize: 12, transition: "transform 0.2s", transform: isSectionOpen("results") ? "rotate(0)" : "rotate(-90deg)" }}>{"\u25BC"}</span>
+            </button>
+            {isSectionOpen("results") && market?.categories?.map((cat, ci) => {
               const catResults = results.results?.filter(r => r.category === cat.name) || [];
               if (!catResults.length) return null;
               const key = `results_${cat.name}`;
               const isExpanded = expandedCategories[key];
+              // Group results by topic
+              const topicGroups = {};
+              catResults.forEach(r => { (topicGroups[r.topic] = topicGroups[r.topic] || []).push(r); });
               return (
                 <div key={ci} style={{ marginBottom: 8 }}>
                   <button onClick={() => toggleCategory(key)} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 16px", color: "#1e293b", fontSize: 14, cursor: "pointer", width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -319,11 +377,23 @@ export default function BrandAudit() {
                     <span style={{ color: "#94a3b8", fontSize: 12 }}>{isExpanded ? "\u25B2" : "\u25BC"}</span>
                   </button>
                   {isExpanded && (
-                    <div style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 10 }}>
-                      {catResults.map((r, ri) => (
-                        <div key={ri} style={{ background: "#f8fafc", borderRadius: 8, padding: "14px 16px", border: "1px solid #e2e8f0" }}>
-                          <p style={{ fontSize: 14, color: "#3b82f6", margin: "0 0 8px", fontWeight: 600 }}>{r.prompt}</p>
-                          <p style={{ fontSize: 14, color: "#475569", margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{r.answer}</p>
+                    <div style={{ padding: "14px 0 4px", display: "flex", flexDirection: "column", gap: 16 }}>
+                      {Object.entries(topicGroups).map(([topic, tResults], ti) => (
+                        <div key={ti}>
+                          <p style={{ fontSize: 11, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700, margin: "0 0 10px", paddingLeft: 2 }}>{topic}</p>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {tResults.map((r, ri) => (
+                              <div key={ri} style={{ borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+                                <div style={{ background: "#f8fafc", padding: "10px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600, flexShrink: 0 }}>Q</span>
+                                  <span style={{ fontSize: 14, color: "#1e293b", fontWeight: 500 }}>{r.prompt}</span>
+                                </div>
+                                <div style={{ padding: "12px 16px 12px 36px" }}>
+                                  <p style={{ fontSize: 14, color: "#475569", margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{r.answer}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -337,14 +407,19 @@ export default function BrandAudit() {
         {/* Step 4: SoV Analysis */}
         {analysis && (
           <div style={card}>
-            <h2 style={sectionTitle}>Share of Voice</h2>
-            <div style={{ marginBottom: 12, ...subtleText }}>
-              Based on {analysis.totalPrompts} prompts &middot; {analysis.totalMentions} total brand mentions
-            </div>
+            <button onClick={() => toggleSection("sov")} style={{ background: "none", border: "none", padding: 0, margin: "0 0 " + (isSectionOpen("sov") ? "18px" : "0"), cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+              <h2 style={sectionTitle}>Share of Voice</h2>
+              <span style={{ color: "#94a3b8", fontSize: 12, transition: "transform 0.2s", transform: isSectionOpen("sov") ? "rotate(0)" : "rotate(-90deg)" }}>{"\u25BC"}</span>
+            </button>
+            {isSectionOpen("sov") && (
+              <>
+                <div style={{ marginBottom: 12, ...subtleText }}>
+                  Based on {analysis.totalPrompts} prompts &middot; {analysis.totalMentions} total brand mentions
+                </div>
 
-            {/* Overall Rankings */}
-            <div style={{ marginBottom: 28 }}>
-              <p style={{ ...labelStyle, marginBottom: 14 }}>Overall Rankings</p>
+                {/* Overall Rankings */}
+                <div style={{ marginBottom: 28 }}>
+                  <p style={{ ...labelStyle, marginBottom: 14 }}>Overall Rankings</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {analysis.rankings?.map((r, i) => (
                   <div key={i} style={{ background: r.isPrimary ? "#eff6ff" : "#f8fafc", borderRadius: 10, padding: "14px 18px", border: r.isPrimary ? "1px solid #bfdbfe" : "1px solid #e2e8f0" }}>
@@ -395,6 +470,8 @@ export default function BrandAudit() {
                   </table>
                 </div>
               </div>
+            )}
+              </>
             )}
           </div>
         )}

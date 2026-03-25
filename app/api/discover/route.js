@@ -1,4 +1,5 @@
 // app/api/discover/route.js
+// Step 1: Brand Discovery — identify products, services, and industry
 import { callLLMJSON, extractProviderConfig } from "../../../lib/llm.js";
 import { webSearch } from "../../../lib/search.js";
 
@@ -30,10 +31,7 @@ export async function POST(req) {
 1. The industry it operates in
 2. Its main products (with brief descriptions)
 3. Its main services (with brief descriptions)
-4. Organize its offerings into categories, each with specific topics that users might search for
 ${searchBlock}
-IMPORTANT: Return at most 5 categories, and at most 3 topics per category. Topics should be specific enough to generate search queries about (e.g., "photo retouching" not just "editing").
-
 Return this exact JSON structure:
 {
   "brand": "${brand.trim()}",
@@ -43,12 +41,6 @@ Return this exact JSON structure:
   ],
   "services": [
     { "name": "Service Name", "description": "Brief description" }
-  ],
-  "categories": [
-    {
-      "name": "Category Name",
-      "topics": ["specific topic 1", "specific topic 2", "specific topic 3"]
-    }
   ]
 }`,
     },
