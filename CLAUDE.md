@@ -44,7 +44,7 @@ Configure in `.env.local` (not committed):
 | Variable | Provider | Description |
 |---|---|---|
 | `AWS_BEARER_TOKEN_BEDROCK` | Bedrock | Bearer token (primary LLM provider) |
-| `AWS_REGION` | Bedrock | AWS region (default: `us-west-2`) |
+| `BEDROCK_REGION` | Bedrock | AWS region (default: `us-west-2`) |
 | `BEDROCK_MODEL` | Bedrock | Model ID (default: `us.anthropic.claude-opus-4-6-v1`) |
 | `AZURE_OPENAI_ENDPOINT` | Azure | Resource endpoint URL (fallback LLM) |
 | `AZURE_OPENAI_KEY` | Azure | API key |

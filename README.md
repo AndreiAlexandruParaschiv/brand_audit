@@ -115,7 +115,7 @@ Create a `.env.local` file in the project root:
 ```env
 # Primary: AWS Bedrock (Claude)
 AWS_BEARER_TOKEN_BEDROCK=your-bearer-token
-AWS_REGION=us-west-2
+BEDROCK_REGION=us-west-2
 BEDROCK_MODEL=us.anthropic.claude-opus-4-6-v1
 
 # Fallback: Azure OpenAI
@@ -131,7 +131,7 @@ TAVILY_API_KEY=tvly-your-key-here
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `AWS_BEARER_TOKEN_BEDROCK` | No | — | Bearer token for AWS Bedrock (enables Claude as primary) |
-| `AWS_REGION` | No | `us-west-2` | AWS region for Bedrock |
+| `BEDROCK_REGION` | No | `us-west-2` | AWS region for Bedrock |
 | `BEDROCK_MODEL` | No | `us.anthropic.claude-opus-4-6-v1` | Bedrock model ID |
 | `AZURE_OPENAI_ENDPOINT` | No | — | Azure OpenAI resource endpoint |
 | `AZURE_OPENAI_KEY` | No | — | Azure OpenAI API key |
