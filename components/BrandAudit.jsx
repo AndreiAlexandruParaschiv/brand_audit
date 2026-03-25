@@ -21,11 +21,7 @@ export default function BrandAudit() {
   const [showSettings, setShowSettings] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
 
-  // Provider settings (same localStorage pattern as before)
-  const [provider, setProvider] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("audit_provider") || "openai";
-    return "openai";
-  });
+  // Azure settings (stored in localStorage)
   const [apiKey, setApiKey] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("audit_api_key") || "";
     return "";
@@ -39,18 +35,14 @@ export default function BrandAudit() {
     return "gpt-4o";
   });
 
-  const saveProvider = (val) => { setProvider(val); if (typeof window !== "undefined") localStorage.setItem("audit_provider", val); };
   const saveApiKey = (val) => { setApiKey(val); if (typeof window !== "undefined") { if (val.trim()) localStorage.setItem("audit_api_key", val.trim()); else localStorage.removeItem("audit_api_key"); } };
   const saveAzureEndpoint = (val) => { setAzureEndpoint(val); if (typeof window !== "undefined") { if (val.trim()) localStorage.setItem("audit_azure_endpoint", val.trim()); else localStorage.removeItem("audit_azure_endpoint"); } };
   const saveAzureDeployment = (val) => { setAzureDeployment(val); if (typeof window !== "undefined") localStorage.setItem("audit_azure_deployment", val); };
 
   const providerConfig = () => ({
     apiKey: apiKey.trim() || undefined,
-    provider,
-    ...(provider === "azure" ? {
-      azureEndpoint: azureEndpoint.trim() || undefined,
-      azureDeployment: azureDeployment.trim() || undefined,
-    } : {}),
+    azureEndpoint: azureEndpoint.trim() || undefined,
+    azureDeployment: azureDeployment.trim() || undefined,
   });
 
   const callAPI = async (url, body) => {
@@ -130,43 +122,31 @@ export default function BrandAudit() {
             <p style={{ color: "#8892a8", marginTop: 8, fontSize: 15 }}>Discover how AI recommends your brand vs competitors</p>
           </div>
           <button onClick={() => setShowSettings(!showSettings)} style={{ background: apiKey.trim() ? "#1e3a2e" : "#1e293b", border: `1px solid ${apiKey.trim() ? "#22c55e44" : "#334155"}`, borderRadius: 8, padding: "8px 14px", color: apiKey.trim() ? "#22c55e" : "#94a3b8", fontSize: 12, cursor: "pointer", flexShrink: 0 }}>
-            {apiKey.trim() ? `${provider === "azure" ? "Azure" : "OpenAI"} Key Set` : "Settings"}
+            {apiKey.trim() ? "Azure Key Set" : "Settings"}
           </button>
         </div>
 
         {/* Settings Panel */}
         {showSettings && (
           <div style={{ background: "#1e293b", borderRadius: 12, padding: 18, border: "1px solid #334155", marginBottom: 20 }}>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 8 }}>PROVIDER</label>
-              <div style={{ display: "flex", gap: 8 }}>
-                {[["openai", "OpenAI"], ["azure", "Azure OpenAI"]].map(([val, label]) => (
-                  <button key={val} onClick={() => saveProvider(val)} style={{ background: provider === val ? "#6366f1" : "#0f172a", border: `1px solid ${provider === val ? "#6366f1" : "#334155"}`, borderRadius: 8, padding: "8px 16px", color: provider === val ? "#fff" : "#94a3b8", fontSize: 13, cursor: "pointer" }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
             <div>
               <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>
-                {provider === "azure" ? "AZURE API KEY" : "OPENAI API KEY"} <span style={{ color: "#475569" }}>(stored in your browser only)</span>
+                AZURE API KEY <span style={{ color: "#475569" }}>(stored in your browser only)</span>
               </label>
               <div style={{ display: "flex", gap: 10 }}>
-                <input type="password" value={apiKey} onChange={e => saveApiKey(e.target.value)} placeholder={provider === "azure" ? "Your Azure OpenAI key..." : "sk-proj-..."} style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 14, outline: "none", fontFamily: "monospace" }} />
+                <input type="password" value={apiKey} onChange={e => saveApiKey(e.target.value)} placeholder="Your Azure OpenAI key..." style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 14, outline: "none", fontFamily: "monospace" }} />
                 {apiKey.trim() && <button onClick={() => saveApiKey("")} style={{ background: "#450a0a", border: "1px solid #dc262644", borderRadius: 8, padding: "8px 14px", color: "#fca5a5", fontSize: 12, cursor: "pointer" }}>Clear</button>}
               </div>
               <p style={{ fontSize: 11, color: "#475569", margin: "8px 0 0" }}>Your key is saved in localStorage and sent only to this app's backend.</p>
             </div>
-            {provider === "azure" && (
-              <div style={{ marginTop: 14 }}>
-                <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>AZURE ENDPOINT</label>
+            <div style={{ marginTop: 14 }}>
+              <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>AZURE ENDPOINT</label>
                 <input value={azureEndpoint} onChange={e => saveAzureEndpoint(e.target.value)} placeholder="https://your-resource.openai.azure.com" style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "monospace" }} />
                 <div style={{ marginTop: 10 }}>
                   <label style={{ display: "block", fontSize: 13, color: "#94a3b8", marginBottom: 6 }}>DEPLOYMENT NAME</label>
                   <input value={azureDeployment} onChange={e => saveAzureDeployment(e.target.value)} placeholder="gpt-4o" style={{ width: "100%", background: "#0f172a", border: "1px solid #334155", borderRadius: 8, padding: "10px 14px", color: "#f1f5f9", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "monospace" }} />
                 </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
 
