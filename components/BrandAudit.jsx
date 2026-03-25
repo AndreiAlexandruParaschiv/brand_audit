@@ -20,41 +20,14 @@ export default function BrandAudit() {
   const [results, setResults] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
   const [collapsedSections, setCollapsedSections] = useState({});
-
-  // Azure settings (stored in localStorage)
-  const [apiKey, setApiKey] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("audit_api_key") || "";
-    return "";
-  });
-  const [azureEndpoint, setAzureEndpoint] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("audit_azure_endpoint") || "";
-    return "";
-  });
-  const [azureDeployment, setAzureDeployment] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("audit_azure_deployment") || "gpt-4o";
-    return "gpt-4o";
-  });
-
-  const saveApiKey = (val) => { setApiKey(val); if (typeof window !== "undefined") { if (val.trim()) localStorage.setItem("audit_api_key", val.trim()); else localStorage.removeItem("audit_api_key"); } };
-  const saveAzureEndpoint = (val) => { setAzureEndpoint(val); if (typeof window !== "undefined") { if (val.trim()) localStorage.setItem("audit_azure_endpoint", val.trim()); else localStorage.removeItem("audit_azure_endpoint"); } };
-  const saveAzureDeployment = (val) => { setAzureDeployment(val); if (typeof window !== "undefined") localStorage.setItem("audit_azure_deployment", val); };
-
-  const providerConfig = () => {
-    const cfg = {};
-    if (apiKey.trim()) cfg.apiKey = apiKey.trim();
-    if (azureEndpoint.trim()) cfg.azureEndpoint = azureEndpoint.trim();
-    if (azureEndpoint.trim() && azureDeployment.trim()) cfg.azureDeployment = azureDeployment.trim();
-    return cfg;
-  };
 
   const callAPI = async (url, body) => {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...body, ...providerConfig() }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -140,39 +113,10 @@ export default function BrandAudit() {
       <div style={{ maxWidth: 960, margin: "0 auto" }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: "#0f172a", margin: 0, letterSpacing: -0.3 }}>Brand Discovery Flow</h1>
-            <p style={{ color: "#94a3b8", marginTop: 6, fontSize: 14, margin: "6px 0 0" }}>Off-site brand visibility, AI share of voice & competitive landscape</p>
-          </div>
-          <button onClick={() => setShowSettings(!showSettings)} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 16px", color: "#475569", fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 6, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            Settings
-          </button>
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "#0f172a", margin: 0, letterSpacing: -0.3 }}>Brand Discovery Flow</h1>
+          <p style={{ color: "#94a3b8", fontSize: 14, margin: "6px 0 0" }}>Off-site brand visibility, AI share of voice & competitive landscape</p>
         </div>
-
-        {/* Settings Panel */}
-        {showSettings && (
-          <div style={{ ...card, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-            <div>
-              <label style={{ ...labelStyle }}>
-                Azure API Key <span style={{ fontWeight: 400, textTransform: "none" }}>(stored in your browser only)</span>
-              </label>
-              <div style={{ display: "flex", gap: 10 }}>
-                <input type="password" value={apiKey} onChange={e => saveApiKey(e.target.value)} placeholder="Your Azure OpenAI key..." style={{ flex: 1, background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "10px 14px", color: "#1e293b", fontSize: 14, outline: "none", fontFamily: "monospace" }} />
-                {apiKey.trim() && <button onClick={() => saveApiKey("")} style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "8px 14px", color: "#dc2626", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Clear</button>}
-              </div>
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <label style={labelStyle}>Azure Endpoint</label>
-              <input value={azureEndpoint} onChange={e => saveAzureEndpoint(e.target.value)} placeholder="https://your-resource.openai.azure.com" style={{ width: "100%", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "10px 14px", color: "#1e293b", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "monospace" }} />
-              <div style={{ marginTop: 10 }}>
-                <label style={labelStyle}>Deployment Name</label>
-                <input value={azureDeployment} onChange={e => saveAzureDeployment(e.target.value)} placeholder="gpt-4o" style={{ width: "100%", background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "10px 14px", color: "#1e293b", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "monospace" }} />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Input */}
         <div style={card}>
