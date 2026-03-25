@@ -122,23 +122,7 @@ npm install
 
 ### Configuration
 
-Create a `.env.local` file in the project root:
-
-```env
-# Primary: AWS Bedrock (Claude)
-AWS_BEARER_TOKEN_BEDROCK=your-bearer-token
-BEDROCK_REGION=us-west-2
-BEDROCK_MODEL=us.anthropic.claude-opus-4-6-v1
-
-# Fallback: Azure OpenAI
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-AZURE_OPENAI_KEY=your-azure-key
-AZURE_API_VERSION=2024-12-01-preview
-AZURE_COMPLETION_DEPLOYMENT=gpt-4o
-
-# Web Search (optional — enables real-time data grounding)
-TAVILY_API_KEY=tvly-your-key-here
-```
+Create a `.env.local` file in the project root with your LLM provider credentials and optionally a Tavily API key for web search grounding. The app supports AWS Bedrock (Claude) as the primary provider with Azure OpenAI as a fallback.
 
 ### Run
 
