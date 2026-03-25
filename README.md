@@ -115,6 +115,9 @@ AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
 AZURE_OPENAI_KEY=your-azure-key
 AZURE_API_VERSION=2024-12-01-preview
 AZURE_COMPLETION_DEPLOYMENT=gpt-4o
+
+# Web Search (optional — enables real-time data grounding)
+TAVILY_API_KEY=tvly-your-key-here
 ```
 
 | Variable | Required | Default | Description |
@@ -126,6 +129,7 @@ AZURE_COMPLETION_DEPLOYMENT=gpt-4o
 | `AZURE_OPENAI_KEY` | No | — | Azure OpenAI API key |
 | `AZURE_API_VERSION` | No | `2024-12-01-preview` | Azure API version |
 | `AZURE_COMPLETION_DEPLOYMENT` | No | `gpt-4o` | Azure deployment name |
+| `TAVILY_API_KEY` | No | — | Tavily API key for web search grounding (free tier: 1,000 searches/month at [tavily.com](https://tavily.com)) |
 
 API keys can also be configured at runtime via the Settings panel in the UI (stored in browser localStorage).
 
@@ -144,8 +148,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 3. Watch the 4-step pipeline execute with real-time progress
 4. Review results: brand profile, categories, prompts, raw answers, and Share of Voice rankings
 
+### Web Search Grounding (Optional)
+
+When `TAVILY_API_KEY` is configured, the pipeline uses live web search to ground results in real-time data:
+
+- **Discover step** — searches for the brand's current products and services
+- **Execute Prompts step** — searches for each prompt before asking the LLM, so brand mentions reflect actual web presence
+
+Without Tavily configured, the pipeline falls back to LLM training knowledge only. A "web-grounded" badge appears in the pipeline progress when search is active.
+
 ## Limitations
 
-- **Data is AI-generated from training knowledge** — results reflect the model's training data, not real-time web data
+- **Without web search, data is LLM training knowledge only** — configure `TAVILY_API_KEY` for real-time web grounding
 - **No authentication** — anyone with access to the URL can run audits (and consume API credits)
 - **Sequential pipeline** — each step must complete before the next begins

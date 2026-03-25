@@ -201,8 +201,14 @@ export default function BrandAudit() {
                       )}
                     </div>
                     <span style={{ fontSize: 15, color: pending ? "#94a3b8" : "#1e293b", fontWeight: completed || active ? 600 : 400 }}>{s}</span>
+                    {i === 0 && currentStep > 0 && discovery?.webSearchUsed && (
+                      <span style={{ fontSize: 11, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 4, padding: "2px 6px", marginLeft: 4 }}>web-grounded</span>
+                    )}
                     {i === 2 && currentStep === 2 && loading && prompts && (
                       <span style={{ fontSize: 13, color: "#94a3b8" }}>({prompts.prompts?.length} prompts)</span>
+                    )}
+                    {i === 2 && currentStep > 2 && results?.webSearchUsed && (
+                      <span style={{ fontSize: 11, color: "#16a34a", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 4, padding: "2px 6px", marginLeft: 4 }}>web-grounded</span>
                     )}
                   </div>
                 );

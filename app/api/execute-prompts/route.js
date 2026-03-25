@@ -1,5 +1,6 @@
 // app/api/execute-prompts/route.js
 import { callLLM, extractProviderConfig } from "../../../lib/llm.js";
+import { webSearch } from "../../../lib/search.js";
 
 export async function POST(req) {
   const body = await req.json();
@@ -13,6 +14,7 @@ export async function POST(req) {
   const CONCURRENCY = 5;
   const results = [];
   let totalFailed = 0;
+  let searchCount = 0;
 
   // Process prompts in batches of CONCURRENCY
   for (let i = 0; i < prompts.length; i += CONCURRENCY) {
@@ -20,12 +22,16 @@ export async function POST(req) {
 
     const batchResults = await Promise.allSettled(
       batch.map(async (p) => {
+        // Web search for each prompt to ground answers in real data
+        const searchContext = await webSearch(p.prompt, 3);
+        if (searchContext) searchCount++;
+
+        const systemContent = searchContext
+          ? `You are a helpful assistant. Use the following web search results as your primary source:\n\n${searchContext}\n\nBased on these results and your knowledge, answer the user's question thoroughly. Recommend specific tools, products, or services by name. Be specific and mention actual brand names.`
+          : "You are a helpful assistant. Answer the user's question thoroughly, recommending specific tools, products, or services by name. Be specific and mention actual brand names.";
+
         const messages = [
-          {
-            role: "system",
-            content:
-              "You are a helpful assistant. Answer the user's question thoroughly, recommending specific tools, products, or services by name. Be specific and mention actual brand names.",
-          },
+          { role: "system", content: systemContent },
           { role: "user", content: p.prompt },
         ];
 
@@ -59,5 +65,7 @@ export async function POST(req) {
     totalRequested: prompts.length,
     totalSucceeded: results.length,
     totalFailed,
+    webSearchUsed: searchCount > 0,
+    webSearchCount: searchCount,
   });
 }

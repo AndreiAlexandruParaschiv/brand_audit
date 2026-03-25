@@ -43,10 +43,11 @@ Configure in `.env.local` (not committed):
 
 | Variable | Provider | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | OpenAI | API key |
-| `OPENAI_ENDPOINT` | OpenAI | Base URL (default: `https://api.openai.com/v1`) |
-| `OPENAI_MODEL` | OpenAI | Model name (default: `gpt-4o`) |
-| `AZURE_OPENAI_ENDPOINT` | Azure | Resource endpoint URL |
+| `AWS_BEARER_TOKEN_BEDROCK` | Bedrock | Bearer token (primary LLM provider) |
+| `AWS_REGION` | Bedrock | AWS region (default: `us-west-2`) |
+| `BEDROCK_MODEL` | Bedrock | Model ID (default: `us.anthropic.claude-opus-4-6-v1`) |
+| `AZURE_OPENAI_ENDPOINT` | Azure | Resource endpoint URL (fallback LLM) |
 | `AZURE_OPENAI_KEY` | Azure | API key |
 | `AZURE_API_VERSION` | Azure | API version (default: `2024-12-01-preview`) |
 | `AZURE_COMPLETION_DEPLOYMENT` | Azure | Deployment name (default: `gpt-4o`) |
+| `TAVILY_API_KEY` | Tavily | Web search API key (optional, enables real-time grounding) |

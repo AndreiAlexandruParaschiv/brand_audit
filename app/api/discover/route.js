@@ -1,5 +1,6 @@
 // app/api/discover/route.js
 import { callLLMJSON, extractProviderConfig } from "../../../lib/llm.js";
+import { webSearch } from "../../../lib/search.js";
 
 export async function POST(req) {
   const body = await req.json();
@@ -10,6 +11,13 @@ export async function POST(req) {
   }
 
   const providerConfig = extractProviderConfig(body);
+
+  // Web search for up-to-date brand info
+  const searchContext = await webSearch(`${brand.trim()} company products services overview`);
+
+  const searchBlock = searchContext
+    ? `\n\nHere are recent web search results about "${brand.trim()}":\n\n${searchContext}\n\nUse these search results to provide accurate, up-to-date information. Prefer facts from the search results over your training data when they conflict.`
+    : "";
 
   const messages = [
     {
@@ -23,7 +31,7 @@ export async function POST(req) {
 2. Its main products (with brief descriptions)
 3. Its main services (with brief descriptions)
 4. Organize its offerings into categories, each with specific topics that users might search for
-
+${searchBlock}
 IMPORTANT: Return at most 5 categories, and at most 3 topics per category. Topics should be specific enough to generate search queries about (e.g., "photo retouching" not just "editing").
 
 Return this exact JSON structure:
@@ -48,6 +56,7 @@ Return this exact JSON structure:
 
   try {
     const result = await callLLMJSON({ messages, providerConfig, options: { maxTokens: 2048 } });
+    result.webSearchUsed = !!searchContext;
     return Response.json(result);
   } catch (e) {
     console.error("Discover error:", e);
