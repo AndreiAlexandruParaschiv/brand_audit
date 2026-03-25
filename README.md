@@ -1,117 +1,96 @@
-# Brand Audit Tool
+# Brand Discovery Flow
 
-An AI-powered off-site brand reputation analysis tool built with Next.js and the OpenAI API. Enter a brand name and optional competitors to get a comprehensive audit covering sentiment, platform reputation, competitive benchmarking, risk assessment, and strategic recommendations.
+An AI-powered off-site brand visibility and Share of Voice analysis tool built with Next.js. Enter a brand name to get a multi-step discovery pipeline that identifies products, services, and categories, generates targeted prompts, executes them against an LLM, and computes competitive Share of Voice rankings.
 
 ## Architecture
 
 ```
 brand_audit/
 ├── app/
-│   ├── layout.js                  # Root layout (HTML shell, metadata)
-│   ├── page.js                    # Home page — renders BrandAudit component
+│   ├── layout.js                        # Root layout (HTML shell, metadata)
+│   ├── page.js                          # Home page — renders BrandAudit component
 │   └── api/
-│       └── brand-audit/
-│           └── route.js           # POST endpoint — calls OpenAI API
+│       ├── discover/route.js            # Step 1: Brand discovery (products, services, categories)
+│       ├── generate-prompts/route.js    # Step 2: Generate search prompts per category/topic
+│       ├── execute-prompts/route.js     # Step 3: Execute prompts against LLM
+│       └── analyze-sov/route.js         # Step 4: Compute Share of Voice rankings
 ├── components/
-│   └── BrandAudit.jsx             # Main UI component (client-side)
-├── .env.local                     # API keys (not committed)
-├── next.config.js                 # Next.js configuration
-└── package.json                   # Dependencies and scripts
+│   └── BrandAudit.jsx                   # Main UI component (client-side)
+├── lib/
+│   └── llm.js                           # Shared LLM caller (Bedrock primary, Azure fallback)
+├── .env.local                           # API keys (not committed)
+├── next.config.js                       # Next.js configuration
+└── package.json                         # Dependencies and scripts
 ```
 
 ## How It Works
 
-### Request Flow
+### Pipeline Flow
+
+The tool runs a 4-step pipeline with progressive rendering — each step's results appear as soon as they're ready:
 
 ```
-Browser                    Next.js Server              OpenAI API
+Browser                    Next.js Server              LLM Provider
   │                            │                          │
-  │  1. User enters brand      │                          │
-  │     name + competitors     │                          │
+  │  1. Enter brand name       │                          │
   │                            │                          │
-  │  2. POST /api/brand-audit  │                          │
-  │  ─────────────────────────>│                          │
-  │     { args: "Nike, Adidas" }                          │
-  │                            │  3. POST /chat/completions
-  │                            │  ────────────────────────>│
-  │                            │     system prompt +       │
-  │                            │     structured JSON schema│
+  │  2. POST /api/discover     │                          │
+  │  ─────────────────────────>│  ───────────────────────>│
+  │  Brand profile displayed   │<─────────────────────────│
+  │<───────────────────────────│                          │
   │                            │                          │
-  │                            │  4. JSON response         │
-  │                            │  <────────────────────────│
+  │  3. POST /api/generate-prompts                        │
+  │  ─────────────────────────>│  ───────────────────────>│
+  │  Prompts list displayed    │<─────────────────────────│
+  │<───────────────────────────│                          │
   │                            │                          │
-  │  5. Parsed audit data      │                          │
-  │  <─────────────────────────│                          │
+  │  4. POST /api/execute-prompts                         │
+  │  ─────────────────────────>│  ───────────────────────>│
+  │  Raw results displayed     │<─────────────────────────│
+  │<───────────────────────────│                          │
   │                            │                          │
-  │  6. Renders dashboard      │                          │
-  │     with visualizations    │                          │
+  │  5. POST /api/analyze-sov  │                          │
+  │  ─────────────────────────>│  ───────────────────────>│
+  │  SoV rankings displayed    │<─────────────────────────│
+  │<───────────────────────────│                          │
 ```
 
-### Backend — `app/api/brand-audit/route.js`
+### Backend — 4-Step API Pipeline
 
-- **POST endpoint** that receives `{ args: "BrandName, Competitor1, Competitor2" }`
-- Sends a structured prompt to the OpenAI API asking for a complete brand audit as JSON
-- The system prompt instructs the model to act as a senior brand strategist
-- The user prompt includes the exact JSON schema the model must return
-- Parses the model's response and forwards it to the frontend
-- Configurable via environment variables: `OPENAI_API_KEY`, `OPENAI_ENDPOINT`, `OPENAI_MODEL`
+| Step | Endpoint | Description |
+|------|----------|-------------|
+| 1 | `POST /api/discover` | Identifies the brand's industry, products, services, and relevant categories/topics |
+| 2 | `POST /api/generate-prompts` | Generates 3 brand-agnostic prompts per topic (best-of, recommendation, alternatives) |
+| 3 | `POST /api/execute-prompts` | Executes all generated prompts against the LLM |
+| 4 | `POST /api/analyze-sov` | Counts brand mentions across all answers and computes Share of Voice percentages |
+
+### LLM Provider Support (`lib/llm.js`)
+
+The LLM caller supports two providers with automatic fallback:
+
+1. **AWS Bedrock (Claude)** — primary, used when `AWS_BEARER_TOKEN_BEDROCK` is set
+2. **Azure OpenAI** — fallback, configured via Azure endpoint + API key
 
 ### Frontend — `components/BrandAudit.jsx`
 
-A single-page React dashboard with a dark theme (Slate/Indigo color palette) that renders:
+A single-page React dashboard with a light theme that renders:
 
 | Section | What it shows |
 |---|---|
-| **Input Form** | Brand name field + optional competitors field |
-| **Phase Progress** | Animated step indicator (simulated phases while waiting for API) |
-| **Executive Summary** | Overall brand health verdict, auto-identified competitors |
-| **Sentiment Overview** | Positive/Negative/Neutral percentages + theme breakdowns |
-| **Platform Scores** | Bar chart with 1-10 scores for Twitter, LinkedIn, Reddit, Trustpilot, etc. |
-| **Competitive Benchmarking** | Table comparing primary brand vs competitors across 6 dimensions |
-| **Risk Register** | Severity-coded cards (critical/high/medium/low) with recommended actions |
-| **Strategic Roadmap** | Recommendations split into Immediate (0-30d), Short-term (1-3mo), Long-term (3-12mo) |
-
-### API Response Schema
-
-The OpenAI model returns a structured JSON object:
-
-```json
-{
-  "brand": "Nike",
-  "competitors": ["Adidas", "Puma"],
-  "auto_identified_competitors": false,
-  "executive_summary": "...",
-  "sentiment": {
-    "positive": 65,
-    "negative": 15,
-    "neutral": 20,
-    "positive_themes": ["..."],
-    "negative_themes": ["..."],
-    "top_mentions": [{ "platform": "...", "type": "...", "summary": "..." }]
-  },
-  "platform_scores": [
-    { "platform": "Twitter/X", "score": 7, "justification": "..." }
-  ],
-  "competitor_matrix": [
-    { "name": "Nike", "is_primary": true, "overall": 8, "reviews": 7, "social": 9, "news": 8, "community": 7, "employer": 7 }
-  ],
-  "risks": [
-    { "issue": "...", "severity": "high", "urgency": "immediate", "action": "..." }
-  ],
-  "recommendations": {
-    "immediate": [{ "what": "...", "why": "...", "impact": "high", "effort": "low" }],
-    "short_term": [{ "what": "...", "why": "...", "impact": "high", "effort": "medium" }],
-    "long_term": [{ "what": "...", "why": "...", "impact": "high", "effort": "high" }]
-  }
-}
-```
+| **Brand Name Input** | Text input with submit button, compact loading state |
+| **Pipeline Progress** | Step indicator with green checkmarks, blue spinner for active step |
+| **Brand Profile** | Industry tag, two-column products/services list with descriptions |
+| **Categories & Topics** | 3-column card grid with blue bullet points per category |
+| **Generated Prompts** | Expandable accordion grouped by category |
+| **Prompt Results** | Expandable accordion showing LLM answers per category |
+| **Share of Voice** | Overall rankings with bar charts, category breakdown table |
 
 ## Setup
 
 ### Prerequisites
 
 - Node.js 18+
-- An OpenAI API key
+- An AWS Bedrock bearer token (Claude) or Azure OpenAI API key
 
 ### Installation
 
@@ -126,16 +105,29 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```env
-OPENAI_API_KEY=sk-proj-your-key-here
-OPENAI_ENDPOINT=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o
+# Primary: AWS Bedrock (Claude)
+AWS_BEARER_TOKEN_BEDROCK=your-bearer-token
+AWS_REGION=us-west-2
+BEDROCK_MODEL=us.anthropic.claude-opus-4-6-v1
+
+# Fallback: Azure OpenAI
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_KEY=your-azure-key
+AZURE_API_VERSION=2024-12-01-preview
+AZURE_COMPLETION_DEPLOYMENT=gpt-4o
 ```
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `OPENAI_API_KEY` | Yes | — | Your OpenAI API key |
-| `OPENAI_ENDPOINT` | No | `https://api.openai.com/v1` | API base URL (supports Azure or proxies) |
-| `OPENAI_MODEL` | No | `gpt-4o` | Model to use for generating audits |
+| `AWS_BEARER_TOKEN_BEDROCK` | No | — | Bearer token for AWS Bedrock (enables Claude as primary) |
+| `AWS_REGION` | No | `us-west-2` | AWS region for Bedrock |
+| `BEDROCK_MODEL` | No | `us.anthropic.claude-opus-4-6-v1` | Bedrock model ID |
+| `AZURE_OPENAI_ENDPOINT` | No | — | Azure OpenAI resource endpoint |
+| `AZURE_OPENAI_KEY` | No | — | Azure OpenAI API key |
+| `AZURE_API_VERSION` | No | `2024-12-01-preview` | Azure API version |
+| `AZURE_COMPLETION_DEPLOYMENT` | No | `gpt-4o` | Azure deployment name |
+
+API keys can also be configured at runtime via the Settings panel in the UI (stored in browser localStorage).
 
 ### Run
 
@@ -147,14 +139,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Usage
 
-1. Enter a brand name (e.g., "Nike")
-2. Optionally add comma-separated competitors (e.g., "Adidas, Puma")
-3. Click **Run Brand Audit**
-4. Wait ~30-90 seconds for the AI to generate the full analysis
-5. Review the dashboard sections: sentiment, platform scores, competitor matrix, risks, and recommendations
+1. Enter a brand name (e.g., "Adobe")
+2. Click **Discover Opportunities** (or press Enter)
+3. Watch the 4-step pipeline execute with real-time progress
+4. Review results: brand profile, categories, prompts, raw answers, and Share of Voice rankings
 
 ## Limitations
 
-- **Data is AI-generated from training knowledge** — it is not based on live web searches. Results reflect the model's training data, not real-time information.
-- **No authentication** — anyone with access to the URL can run audits (and consume API credits).
-- **Single API call** — the entire audit is generated in one request, which may hit token limits for very detailed analyses.
+- **Data is AI-generated from training knowledge** — results reflect the model's training data, not real-time web data
+- **No authentication** — anyone with access to the URL can run audits (and consume API credits)
+- **Sequential pipeline** — each step must complete before the next begins

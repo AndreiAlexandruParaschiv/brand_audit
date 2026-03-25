@@ -1,6 +1,6 @@
 export const metadata = {
-  title: "Brand Audit Tool",
-  description: "Off-site brand reputation, visibility & competitive analysis",
+  title: "Brand Discovery Flow",
+  description: "Off-site brand visibility, AI share of voice & competitive landscape",
 };
 
 export default function RootLayout({ children }) {

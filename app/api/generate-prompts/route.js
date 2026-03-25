@@ -29,12 +29,10 @@ These prompts must NOT mention any specific brand name. They should be natural q
 Here are the categories and topics to cover:
 ${categoryList}
 
-Generate exactly 5 prompts per topic. Each prompt should be a different type of query:
+Generate exactly 3 prompts per topic. Each prompt should be a different type of query:
 1. A "best of" comparison question
-2. A specific use-case question
-3. A recommendation-seeking question
-4. A "how to" or workflow question
-5. An alternative/option exploration question
+2. A recommendation-seeking question
+3. An alternative/option exploration question
 
 Return this exact JSON structure:
 {

@@ -38,12 +38,12 @@ Compute Share of Voice (SoV) as: (brand_mentions / total_all_brand_mentions) * 1
 Instructions:
 - Count each distinct mention of a brand in an answer (if "Adobe Photoshop" and "Adobe Illustrator" both appear, that is 2 mentions for Adobe)
 - Group sub-brands under their parent company (e.g., "Photoshop" counts as "Adobe")
-- Include only brands mentioned at least twice across all answers
+- Include only the TOP 10 brands by mention count in the overall rankings (skip the rest)
 - Sort rankings by shareOfVoice descending
 - Mark the primary brand with isPrimary: true
-- Provide a category-level breakdown showing SoV per category (each category must have its own independent SoV calculation based on mentions within that category only)
-- Every brand that appears in a category's answers MUST have a non-zero shareOfVoice in that category's breakdown
-- shareOfVoice values must be decimal numbers (e.g., 25.5), never 0 for brands that were mentioned
+- Provide a category-level breakdown showing SoV per category — include only TOP 5 brands per category
+- shareOfVoice values must be decimal numbers (e.g., 25.5)
+- Keep the response CONCISE — do not include brands with very few mentions
 
 Return this exact JSON structure:
 {
@@ -69,7 +69,7 @@ Return this exact JSON structure:
     const result = await callLLMJSON({
       messages,
       providerConfig,
-      options: { maxTokens: 8192 },
+      options: { maxTokens: 16384 },
     });
     return Response.json(result);
   } catch (e) {
