@@ -15,29 +15,37 @@ export async function POST(req) {
     .map((c) => `Category: ${c.name}\n  Topics: ${c.topics.join(", ")}`)
     .join("\n");
 
+  const currentDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long" });
+
   const messages = [
     {
       role: "system",
-      content: `You are a market research analyst specializing in search behavior and consumer intent. Always respond with valid JSON only — no markdown fences, no preamble.`,
+      content: `You are an expert at simulating how real people talk to AI assistants like ChatGPT or Claude. The current date is ${currentDate}. Always respond with valid JSON only — no markdown fences, no preamble.`,
     },
     {
       role: "user",
-      content: `For the industry "${industry}", generate non-branded search prompts that a real user would ask.
+      content: `For the industry "${industry}", generate prompts that sound exactly like how a real person would ask an AI chatbot for help. These are NOT search engine queries — they are conversational messages typed into ChatGPT, Claude, or similar.
 
-These prompts must NOT mention any specific brand name. They should be natural questions someone would type into a search engine or ask an AI assistant when looking for solutions in this space.
+IMPORTANT RULES:
+- Do NOT mention any specific brand name in the prompts
+- Write in first person, casual/natural tone — like a real person typing
+- Include personal context, real-world scenarios, or constraints (budget, experience level, team size, use case)
+- Vary the personas: professional, casual user, student, small business owner, beginner, power user, etc.
+- Never reference a year unless it's naturally relevant — the AI already knows the current date
+- Avoid formulaic patterns like "What are the best X for Y" — mix up the phrasing
 
 Here are the categories and topics to cover:
 ${categoryList}
 
-Generate exactly 3 prompts per topic. Each prompt should be a different type of query:
-1. A "best of" comparison question
-2. A recommendation-seeking question
-3. An alternative/option exploration question
+Generate exactly 3 prompts per topic. Each should feel like a DIFFERENT person with a different situation asking for help. Examples of good tone:
+- "I need to edit product photos for my online store but I'm not a designer — what tools would make this easy?"
+- "my team is looking for something to manage our sprint planning, we're about 15 people and use Slack heavily"
+- "I want to start making YouTube videos, what's a good setup for editing that won't cost me a fortune?"
 
 Return this exact JSON structure:
 {
   "prompts": [
-    { "category": "Category Name", "topic": "topic name", "prompt": "the non-branded question" }
+    { "category": "Category Name", "topic": "topic name", "prompt": "the conversational prompt" }
   ]
 }`,
     },
