@@ -68,9 +68,21 @@ Browser                    Next.js Server              LLM / Search
 |------|----------|-------------|
 | 1 | `POST /api/discover` | **Brand Discovery** — identifies the brand's industry, products, and services |
 | 2 | `POST /api/market-discovery` | **Market Discovery** — researches the broader market landscape to find categories and topics, including areas where competitors may dominate |
-| 3 | `POST /api/generate-prompts` | Generates 3 brand-agnostic prompts per topic (best-of, recommendation, alternatives) |
+| 3 | `POST /api/generate-prompts` | Generates 3 conversational, LLM-style prompts per topic with varied personas and real-world scenarios |
 | 4 | `POST /api/execute-prompts` | Executes all generated prompts against the LLM (with web search grounding) |
 | 5 | `POST /api/analyze-sov` | Counts brand mentions across all answers and computes Share of Voice percentages |
+
+### How Prompt Execution Works
+
+The execute-prompts step automates what a human would do manually — asking an AI chatbot dozens of questions and tallying which brands it recommends.
+
+For each prompt (e.g., *"I need to edit product photos for my online store, what should I use?"*):
+
+1. **Web search** — Tavily searches the question to get real-time web context
+2. **LLM call** — the prompt + search results are sent to the LLM (Bedrock Claude), which answers exactly like ChatGPT or Claude would — recommending specific brands by name
+3. **Collect** — the answer is stored for SoV analysis
+
+The answers match what you'd get from ChatGPT because it's the same class of model, the same conversational prompts a real human would type, and the same web search grounding. This is what makes the Share of Voice metric meaningful — it reflects what real users actually see when they ask AI for recommendations.
 
 ### LLM Provider Support (`lib/llm.js`)
 
@@ -127,19 +139,6 @@ AZURE_COMPLETION_DEPLOYMENT=gpt-4o
 # Web Search (optional — enables real-time data grounding)
 TAVILY_API_KEY=tvly-your-key-here
 ```
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `AWS_BEARER_TOKEN_BEDROCK` | No | — | Bearer token for AWS Bedrock (enables Claude as primary) |
-| `BEDROCK_REGION` | No | `us-west-2` | AWS region for Bedrock |
-| `BEDROCK_MODEL` | No | `us.anthropic.claude-opus-4-6-v1` | Bedrock model ID |
-| `AZURE_OPENAI_ENDPOINT` | No | — | Azure OpenAI resource endpoint |
-| `AZURE_OPENAI_KEY` | No | — | Azure OpenAI API key |
-| `AZURE_API_VERSION` | No | `2024-12-01-preview` | Azure API version |
-| `AZURE_COMPLETION_DEPLOYMENT` | No | `gpt-4o` | Azure deployment name |
-| `TAVILY_API_KEY` | No | — | Tavily API key for web search grounding (free tier: 1,000 searches/month at [tavily.com](https://tavily.com)) |
-
-API keys can also be configured at runtime via the Settings panel in the UI (stored in browser localStorage).
 
 ### Run
 
