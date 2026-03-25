@@ -42,11 +42,13 @@ export default function BrandAudit() {
   const saveAzureEndpoint = (val) => { setAzureEndpoint(val); if (typeof window !== "undefined") { if (val.trim()) localStorage.setItem("audit_azure_endpoint", val.trim()); else localStorage.removeItem("audit_azure_endpoint"); } };
   const saveAzureDeployment = (val) => { setAzureDeployment(val); if (typeof window !== "undefined") localStorage.setItem("audit_azure_deployment", val); };
 
-  const providerConfig = () => ({
-    apiKey: apiKey.trim() || undefined,
-    azureEndpoint: azureEndpoint.trim() || undefined,
-    azureDeployment: azureDeployment.trim() || undefined,
-  });
+  const providerConfig = () => {
+    const cfg = {};
+    if (apiKey.trim()) cfg.apiKey = apiKey.trim();
+    if (azureEndpoint.trim()) cfg.azureEndpoint = azureEndpoint.trim();
+    if (azureEndpoint.trim() && azureDeployment.trim()) cfg.azureDeployment = azureDeployment.trim();
+    return cfg;
+  };
 
   const callAPI = async (url, body) => {
     const res = await fetch(url, {
