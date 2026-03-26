@@ -14,28 +14,41 @@ No test framework is configured. No linter is configured.
 
 ## Architecture
 
-Single-page Next.js 14 (App Router) application that generates AI-powered brand audits via OpenAI or Azure OpenAI APIs.
+Single-page Next.js 14 (App Router) application that runs a 5-step AI pipeline to measure brand Share of Voice in LLM-generated responses.
 
-**Request flow:** Browser → `POST /api/brand-audit` → OpenAI/Azure API → structured JSON → rendered dashboard
+**Pipeline flow:** Brand Discovery → Market Discovery → Generate Prompts → Execute Prompts → Analyze SoV
 
 ### Key files
 
-- `app/api/brand-audit/route.js` — API route that constructs a system+user prompt pair, calls OpenAI Responses API (with `web_search_preview` tool) or Azure Chat Completions API, parses the JSON response. The entire audit schema is defined inline in the user prompt.
-- `components/BrandAudit.jsx` — Single client component ("use client") containing all UI: input form, settings panel, phase progress animation, and all report visualization sections. Uses inline styles exclusively (no CSS framework). Dark theme with Slate/Indigo palette.
+- `app/api/discover/route.js` — Step 1: Brand Discovery. Identifies brand's industry, products, and services. Uses web search (Tavily) for up-to-date info.
+- `app/api/market-discovery/route.js` — Step 2: Market Discovery. Takes products/services as input, researches the broader market landscape to find categories and topics (including areas where competitors may dominate). Uses web search.
+- `app/api/generate-prompts/route.js` — Step 3: Generates 3 conversational, LLM-style prompts per topic with varied personas and real-world scenarios. Injects current date.
+- `app/api/execute-prompts/route.js` — Step 4: Executes all prompts against the LLM with web search grounding. Processes in batches of 5 concurrent. Returns Q&A results.
+- `app/api/analyze-sov/route.js` — Step 5: Counts brand mentions across all answers, computes Share of Voice percentages overall and per category. Top 10 brands overall, top 5 per category.
+- `lib/llm.js` — Shared LLM caller. Bedrock (Claude) primary, Azure OpenAI fallback. Handles message format conversion.
+- `lib/search.js` — Web search via Tavily API. Returns null if not configured (graceful fallback).
+- `components/BrandAudit.jsx` — Single client component ("use client") containing all UI: input form, pipeline progress, collapsible result sections. Uses inline styles exclusively (no CSS framework). Light theme with blue accents.
 - `app/page.js` — Renders `<BrandAudit />` only.
 - `app/layout.js` — Minimal HTML shell with metadata.
 
-### Dual provider support
+### LLM provider support
 
-The API route supports two providers selected at runtime:
-- **OpenAI** (default): Uses `/responses` endpoint with `web_search_preview` tool. Auth via `Authorization: Bearer` header.
-- **Azure OpenAI**: Uses `/openai/deployments/{name}/chat/completions` endpoint. Auth via `api-key` header. No web search.
+Two providers with automatic fallback:
+- **AWS Bedrock (Claude)** — primary, used when `AWS_BEARER_TOKEN_BEDROCK` is set. Uses Claude Messages API format.
+- **Azure OpenAI** — fallback, uses Chat Completions endpoint with `api-key` header.
 
-Provider is determined by: user UI selection → env var detection (`AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_KEY`) → defaults to OpenAI.
+### Web search grounding
 
-### Client-side settings
+When `TAVILY_API_KEY` is set, three pipeline steps use live web search:
+- Brand Discovery — searches for brand products/services
+- Market Discovery — searches for industry market landscape
+- Execute Prompts — searches for each prompt before LLM call
 
-API keys and provider config are stored in `localStorage` (keys: `audit_provider`, `audit_api_key`, `audit_azure_endpoint`, `audit_azure_deployment`) and sent per-request to the backend. Server-side env vars are used as fallbacks.
+If Tavily is unavailable or fails, each step falls back to LLM knowledge only. No crash, no interruption.
+
+### Frontend
+
+All credentials are server-side env vars only (no client-side settings panel). The UI has collapsible sections, prompts/results grouped by topic, and Q&A cards for execution results.
 
 ## Environment Variables
 
@@ -45,9 +58,9 @@ Configure in `.env.local` (not committed):
 |---|---|---|
 | `AWS_BEARER_TOKEN_BEDROCK` | Bedrock | Bearer token (primary LLM provider) |
 | `BEDROCK_REGION` | Bedrock | AWS region (default: `us-west-2`) |
-| `BEDROCK_MODEL` | Bedrock | Model ID (default: `us.anthropic.claude-opus-4-6-v1`) |
+| `BEDROCK_MODEL` | Bedrock | Model ID |
 | `AZURE_OPENAI_ENDPOINT` | Azure | Resource endpoint URL (fallback LLM) |
 | `AZURE_OPENAI_KEY` | Azure | API key |
-| `AZURE_API_VERSION` | Azure | API version (default: `2024-12-01-preview`) |
-| `AZURE_COMPLETION_DEPLOYMENT` | Azure | Deployment name (default: `gpt-4o`) |
+| `AZURE_API_VERSION` | Azure | API version |
+| `AZURE_COMPLETION_DEPLOYMENT` | Azure | Deployment name |
 | `TAVILY_API_KEY` | Tavily | Web search API key (optional, enables real-time grounding) |
