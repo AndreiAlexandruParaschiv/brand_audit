@@ -20,39 +20,42 @@ export async function POST(req) {
   const messages = [
     {
       role: "system",
-      content: `You are an expert at simulating how real people talk to AI assistants like ChatGPT or Claude. The current date is ${currentDate}. Always respond with valid JSON only — no markdown fences, no preamble.`,
+      content: `You are a market research analyst. The current date is ${currentDate}. Always respond with valid JSON only — no markdown fences, no preamble.`,
     },
     {
       role: "user",
-      content: `For the industry "${industry}", generate prompts that sound exactly like how a real person would ask an AI chatbot for help. These are NOT search engine queries — they are conversational messages typed into ChatGPT, Claude, or similar.
+      content: `For the industry "${industry}", generate short, natural questions that someone would ask an AI assistant or search engine.
 
-IMPORTANT RULES:
-- Do NOT mention any specific brand name in the prompts
-- Write in first person, casual/natural tone — like a real person typing
-- Include personal context, real-world scenarios, or constraints (budget, experience level, team size, use case)
-- Vary the personas: professional, casual user, student, small business owner, beginner, power user, etc.
-- Never reference a year unless it's naturally relevant — the AI already knows the current date
-- Avoid formulaic patterns like "What are the best X for Y" — mix up the phrasing
+RULES:
+- Do NOT mention any specific brand name
+- Keep each prompt SHORT — one sentence, under 15 words ideally
+- Write as simple, direct questions — not long paragraphs
+- Mix question styles: "what is the best...", "which ... has the best...", "top ... for ...", "best ... compared to ...", etc.
+- Do not reference any year
 
 Here are the categories and topics to cover:
 ${categoryList}
 
-Generate exactly 3 prompts per topic. Each should feel like a DIFFERENT person with a different situation asking for help. Examples of good tone:
-- "I need to edit product photos for my online store but I'm not a designer — what tools would make this easy?"
-- "my team is looking for something to manage our sprint planning, we're about 15 people and use Slack heavily"
-- "I want to start making YouTube videos, what's a good setup for editing that won't cost me a fortune?"
+Generate exactly 3 prompts per topic.
+
+Good examples:
+- "what is the best SUV on the market"
+- "which car manufacturer has the best comfort quality"
+- "best photo editing software for professionals"
+- "top project management tools for small teams"
+- "what video editor do most YouTubers use"
 
 Return this exact JSON structure:
 {
   "prompts": [
-    { "category": "Category Name", "topic": "topic name", "prompt": "the conversational prompt" }
+    { "category": "Category Name", "topic": "topic name", "prompt": "the short question" }
   ]
 }`,
     },
   ];
 
   try {
-    const result = await callLLMJSON({ messages, providerConfig, options: { maxTokens: 8192 } });
+    const result = await callLLMJSON({ messages, providerConfig, options: { maxTokens: 4096 } });
     return Response.json(result);
   } catch (e) {
     console.error("Generate prompts error:", e);
