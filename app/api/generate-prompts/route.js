@@ -52,7 +52,7 @@ Return this exact JSON structure:
   ];
 
   try {
-    const result = await callLLMJSON({ messages, providerConfig, options: { maxTokens: 4096 } });
+    const result = await callLLMJSON({ messages, providerConfig, options: { maxTokens: 8192 } });
     return Response.json(result);
   } catch (e) {
     console.error("Generate prompts error:", e);
