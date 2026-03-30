@@ -224,7 +224,7 @@ export default function BrandAudit() {
       <div style={{ padding: "32px 32px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#0c1222", margin: 0, letterSpacing: -0.5 }}>Brand Discovery Flow</h1>
+            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#0c1222", margin: 0, letterSpacing: -0.5 }}>Off-Site Discovery Flow</h1>
             <p style={{ color: "#8896a7", fontSize: 14, margin: "6px 0 0", letterSpacing: 0.1 }}>Off-site brand visibility, AI share of voice & competitive landscape</p>
           </div>
 

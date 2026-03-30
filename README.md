@@ -1,4 +1,4 @@
-# Brand Discovery Flow
+# Off-Site Discovery Flow
 
 An AI-powered off-site brand visibility and Share of Voice analysis tool built with Next.js. Enter a brand name to run a 5-step pipeline: discover the brand's products and services, research the broader market landscape, generate targeted prompts, execute them against an LLM with web search, and compute competitive Share of Voice rankings.
 

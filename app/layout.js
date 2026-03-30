@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Brand Discovery Flow",
+  title: "Off-Site Discovery Flow",
   description: "Off-site brand visibility, AI share of voice & competitive landscape",
 };
 
