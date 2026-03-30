@@ -2,12 +2,16 @@
 "use client";
 import { useState } from "react";
 
-const STEPS = [
+const PIPELINE_STEPS = [
   "Brand Discovery",
   "Market Discovery",
   "Generating Prompts",
   "Executing Prompts",
   "Analyzing Share of Voice",
+];
+
+const DEMO_STEPS = [
+  ...PIPELINE_STEPS,
   "Off-Site Insights",
 ];
 
@@ -159,6 +163,7 @@ export default function BrandAudit() {
   const [error, setError] = useState(null);
   const [collapsedSections, setCollapsedSections] = useState({});
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [isDemo, setIsDemo] = useState(false);
 
   const callAPI = async (url, body) => {
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -168,7 +173,7 @@ export default function BrandAudit() {
 
   const runPipeline = async () => {
     if (!brand.trim()) return;
-    setLoading(true); setDiscovery(null); setMarket(null); setPrompts(null); setResults(null); setAnalysis(null); setError(null); setCollapsedSections({}); setExpandedCategories({});
+    setLoading(true); setIsDemo(false); setDiscovery(null); setMarket(null); setPrompts(null); setResults(null); setAnalysis(null); setError(null); setCollapsedSections({}); setExpandedCategories({});
     try {
       setCurrentStep(0);
       const disc = await callAPI("/api/discover", { brand: brand.trim() });
@@ -186,8 +191,6 @@ export default function BrandAudit() {
       const sov = await callAPI("/api/analyze-sov", { brand: brand.trim(), results: execResults.results });
       setAnalysis(sov);
       setCurrentStep(5);
-      // Step 6: Off-Site Insights (instant — uses existing data)
-      setCurrentStep(6);
     } catch (e) { setError(e.message || "Something went wrong."); } finally { setLoading(false); }
   };
 
@@ -197,8 +200,8 @@ export default function BrandAudit() {
     setMarket({ webSearchUsed: true, categories: [{ name: "Modular & Sectional Sofas", topics: ["Customizable Modular Sofas", "Family-Friendly Sectionals", "Small Space Modular Furniture"] }, { name: "Home Theater & Audio", topics: ["Built-In Sound Systems", "Immersive Home Theater Seating", "Wireless Audio Furniture"] }, { name: "Premium Comfort Seating", topics: ["Oversized Lounge Chairs", "Gaming Chairs & Beanbags", "Ergonomic Recliners"] }, { name: "Sustainable & Eco-Friendly Furniture", topics: ["Recyclable Furniture Materials", "Long-Lasting Furniture Design", "Eco-Conscious Home Brands"] }, { name: "Direct-to-Consumer Furniture", topics: ["Online Sofa Shopping", "Sofa-in-a-Box Delivery", "Custom Fabric & Configuration"] }] });
     setPrompts({ prompts: [{ category: "Modular & Sectional Sofas", topic: "Customizable Modular Sofas", prompt: "what is the best modular sofa you can rearrange?" }, { category: "Modular & Sectional Sofas", topic: "Customizable Modular Sofas", prompt: "which modular couch has the most configuration options?" }, { category: "Modular & Sectional Sofas", topic: "Customizable Modular Sofas", prompt: "what are the top modular sofas that grow with your space?" }, { category: "Modular & Sectional Sofas", topic: "Family-Friendly Sectionals", prompt: "what is the best sectional sofa for families with kids and pets?" }, { category: "Modular & Sectional Sofas", topic: "Family-Friendly Sectionals", prompt: "which couches have washable and stain-resistant covers?" }, { category: "Modular & Sectional Sofas", topic: "Small Space Modular Furniture", prompt: "what is the best modular sofa for a small apartment?" }, { category: "Home Theater & Audio", topic: "Built-In Sound Systems", prompt: "which sofas have built-in speakers?" }, { category: "Home Theater & Audio", topic: "Built-In Sound Systems", prompt: "what is the best furniture with integrated surround sound?" }, { category: "Home Theater & Audio", topic: "Immersive Home Theater Seating", prompt: "what is the best couch for a home theater setup?" }, { category: "Premium Comfort Seating", topic: "Oversized Lounge Chairs", prompt: "what is the most comfortable oversized chair?" }, { category: "Premium Comfort Seating", topic: "Gaming Chairs & Beanbags", prompt: "what is the best premium beanbag chair for adults?" }, { category: "Premium Comfort Seating", topic: "Gaming Chairs & Beanbags", prompt: "what are the best large beanbag chairs for gaming?" }, { category: "Sustainable & Eco-Friendly Furniture", topic: "Recyclable Furniture Materials", prompt: "which furniture brands use recycled or sustainable materials?" }, { category: "Sustainable & Eco-Friendly Furniture", topic: "Long-Lasting Furniture Design", prompt: "what furniture brands are designed to last a lifetime?" }, { category: "Direct-to-Consumer Furniture", topic: "Online Sofa Shopping", prompt: "what is the best place to buy a sofa online?" }, { category: "Direct-to-Consumer Furniture", topic: "Sofa-in-a-Box Delivery", prompt: "which couch-in-a-box brands have the best reviews?" }, { category: "Direct-to-Consumer Furniture", topic: "Custom Fabric & Configuration", prompt: "which online sofa brands let you fully customize fabric and layout?" }] });
     setResults({ totalRequested: 17, totalSucceeded: 17, totalFailed: 0, webSearchUsed: true, webSearchCount: 17, results: [{ category: "Modular & Sectional Sofas", topic: "Customizable Modular Sofas", prompt: "what is the best modular sofa you can rearrange?", answer: "## Best Modular Sofas for Rearranging\n\n**Lovesac Sactionals** are widely considered the gold standard for modular sofas. Their patented design lets you add or remove seats and sides infinitely, and every piece is interchangeable.\n\n**Burrow Nomad** offers a more affordable modular option with tool-free assembly and a clean mid-century look.\n\n**IKEA Vallentuna** is the budget king of modular sofas with tons of configuration options.\n\n**Article Corvus** provides a stylish modular sectional at a mid-range price point." }, { category: "Modular & Sectional Sofas", topic: "Family-Friendly Sectionals", prompt: "what is the best sectional sofa for families with kids and pets?", answer: "For families with kids and pets, you want **stain resistance and washability**:\n\n**Lovesac Sactionals** — Every cover is machine-washable and replaceable. Incredibly durable and pet-proof.\n\n**Crate & Barrel Lounge II** — Performance fabric options that resist stains.\n\n**Pottery Barn PB Comfort** — Known for durability with kid-friendly fabric options.\n\n**IKEA Ektorp** — Budget-friendly with removable, washable slipcovers." }, { category: "Home Theater & Audio", topic: "Built-In Sound Systems", prompt: "which sofas have built-in speakers?", answer: "Very few furniture brands offer built-in audio:\n\n**Lovesac StealthTech** is the only major sofa brand with **Harman Kardon speakers and bass built directly into the furniture**. The speakers are completely invisible — hidden in the sides and seats.\n\nMost other home theater setups require separate sound bars or speaker systems. Lovesac is essentially alone in this niche." }, { category: "Premium Comfort Seating", topic: "Gaming Chairs & Beanbags", prompt: "what is the best premium beanbag chair for adults?", answer: "For premium adult beanbag chairs:\n\n**Lovesac Sacs** (especially the BigOne and MovieSac) are the premium option — filled with Durafoam that doesn't flatten over time like traditional beanbags.\n\n**CordaRoy's** offers convertible beanbags that fold out into beds.\n\n**Moon Pod** takes a different approach with a gravity-defying adaptive fill.\n\n**Yogibo Max** is popular for its length and versatility.\n\nLovesac is the most expensive but also the most durable long-term." }, { category: "Premium Comfort Seating", topic: "Gaming Chairs & Beanbags", prompt: "what are the best large beanbag chairs for gaming?", answer: "Best large beanbag chairs for gaming:\n\n**Lovesac GameSac / SuperSac** — Premium Durafoam fill that doesn't flatten during long sessions. Large enough to sit upright or recline.\n\n**Yogibo Max** — Popular with gamers for its length. Can be used as a chair or lounger.\n\n**CordaRoy's King** — Converts to a bed, great for gaming rooms that double as guest rooms.\n\n**Moon Pod** — Smaller but ergonomic. Good for focused gaming posture.\n\n**Big Joe** — Budget-friendly option available at most retailers." }, { category: "Sustainable & Eco-Friendly Furniture", topic: "Recyclable Furniture Materials", prompt: "which furniture brands use recycled or sustainable materials?", answer: "Several brands prioritize sustainability:\n\n**IKEA** has committed to using only renewable and recycled materials by 2030.\n\n**West Elm** offers a wide range of FSC-certified and Fair Trade furniture.\n\n**Burrow** uses sustainably sourced wood and recycled packaging.\n\n**Medley** makes sofas with organic and non-toxic materials.\n\n**Lovesac** has a trade-in program and uses recycled materials in some product lines, though sustainability isn't their primary positioning.\n\n**Sabai** is a newer brand focused entirely on sustainable, recyclable sofas." }, { category: "Direct-to-Consumer Furniture", topic: "Online Sofa Shopping", prompt: "what is the best place to buy a sofa online?", answer: "The top online sofa shopping destinations:\n\n**Article** — Great design at reasonable prices with fast delivery. Consistently top-rated.\n\n**Burrow** — Modular, ships in boxes, tool-free assembly. Good for apartments.\n\n**Joybird** — Customizable mid-century styles with 90-day returns.\n\n**Interior Define** — Highly customizable with 100+ fabrics.\n\n**Lovesac** — Premium modular option, higher price point but lifetime value.\n\n**Castlery** — Stylish designs at competitive prices.\n\nArticle and Burrow tend to have the best overall online buying experience." }, { category: "Direct-to-Consumer Furniture", topic: "Sofa-in-a-Box Delivery", prompt: "which couch-in-a-box brands have the best reviews?", answer: "Top-rated couch-in-a-box brands:\n\n**Burrow** — Consistently rated highest for easy assembly and quality.\n\n**Article** — Not technically in-a-box but ships efficiently with great reviews.\n\n**Albany Park** — Affordable with surprisingly good quality.\n\n**Allform** — Modular with performance fabric options.\n\n**Lovesac** — Ships modular pieces in boxes. Higher price but best long-term value.\n\nBurrow and Albany Park tend to dominate the couch-in-a-box reviews." }, { category: "Modular & Sectional Sofas", topic: "Customizable Modular Sofas", prompt: "which modular couch has the most configuration options?", answer: "For sheer configuration flexibility:\n\n**Lovesac Sactionals** offer the most options by far — unlimited seat/side combinations, 200+ fabric choices, and accessories like storage seats and drink holders.\n\n**IKEA Vallentuna** has a good range of modules at a budget price.\n\n**Burrow Nomad** offers 5-6 configuration presets that cover most living room layouts.\n\n**Campaign** provides a simpler modular system with easy reconfiguration." }, { category: "Modular & Sectional Sofas", topic: "Customizable Modular Sofas", prompt: "what are the top modular sofas that grow with your space?", answer: "Sofas designed to expand over time:\n\n**Lovesac Sactionals** — The original \"buy pieces over time\" concept. Add seats and sides as your space grows. Lifetime warranty.\n\n**Burrow** — Add modules easily with their modular architecture.\n\n**Floyd Sofa** — Modular with a Scandinavian design aesthetic.\n\n**IKEA Vallentuna** — Budget-friendly modular that you can expand piece by piece." }, { category: "Modular & Sectional Sofas", topic: "Family-Friendly Sectionals", prompt: "which couches have washable and stain-resistant covers?", answer: "Best options for washable sofa covers:\n\n**Lovesac Sactionals** — All covers are machine-washable and individually replaceable. You can even change the entire look by swapping covers.\n\n**IKEA Ektorp/Uppland** — Removable, machine-washable slipcovers at a budget price.\n\n**Crate & Barrel** — Performance fabric options that resist stains.\n\n**Pottery Barn PB Comfort** — Stain-resistant performance fabrics available." }, { category: "Modular & Sectional Sofas", topic: "Small Space Modular Furniture", prompt: "what is the best modular sofa for a small apartment?", answer: "For small apartments:\n\n**Burrow Nomad** — Compact footprint with modular expansion. Ships in boxes that fit through narrow doorways.\n\n**IKEA Friheten** — Sleeper sectional that doubles as storage.\n\n**Article Sven** — Slim profile that works in tight spaces.\n\n**Lovesac** — You can start with just 2 seats and 2 sides for a compact loveseat, then expand later. But individual pieces are pricier." }, { category: "Home Theater & Audio", topic: "Built-In Sound Systems", prompt: "what is the best furniture with integrated surround sound?", answer: "**Lovesac StealthTech** is essentially the only major furniture brand with fully integrated surround sound — Harman Kardon speakers and subwoofer hidden inside the sofa cushions.\n\nMost home theater enthusiasts use separate systems:\n- **Sonos** sound bars and surround speakers\n- **Samsung** soundbar + rear speakers\n- **Bose** home theater packages\n\nLovesac's advantage is zero visible speakers and no cable management needed." }, { category: "Home Theater & Audio", topic: "Immersive Home Theater Seating", prompt: "what is the best couch for a home theater setup?", answer: "Best couches for home theater:\n\n**Lovesac Sactionals with StealthTech** — The premium choice with built-in Harman Kardon audio. Deep seating configuration available.\n\n**Valencia Theater Seating** — Dedicated home theater recliners with power adjustment.\n\n**Seatcraft** — Purpose-built theater seating with cupholders and storage.\n\n**La-Z-Boy** — Reclining sectionals that work well for casual home theaters.\n\nLovesac is the only one combining regular living room furniture with theater-grade audio." }, { category: "Premium Comfort Seating", topic: "Oversized Lounge Chairs", prompt: "what is the most comfortable oversized chair?", answer: "Most comfortable oversized chairs:\n\n**Lovesac SuperSac / MovieSac** — Massive Durafoam-filled chairs that conform to your body without flattening.\n\n**Restoration Hardware Cloud Chair** — Luxuriously deep and soft.\n\n**Pottery Barn Anywhere Chair** (adult version) — Classic oversized comfort.\n\n**Arhaus Cozy Chair** — Premium oversized swivel chair.\n\nThe Lovesac Sacs are unique because the foam filling maintains its shape for years unlike traditional stuffing." }, { category: "Sustainable & Eco-Friendly Furniture", topic: "Long-Lasting Furniture Design", prompt: "what furniture brands are designed to last a lifetime?", answer: "Furniture built for longevity:\n\n**Stickley** — American-made hardwood furniture with multi-generational durability.\n\n**Room & Board** — High-quality construction with lifetime frame warranty.\n\n**Lovesac** — Lifetime warranty on Sactionals frames. Designed so covers and fill can be replaced without buying new furniture.\n\n**Herman Miller** — Iconic office furniture built to last decades.\n\n**IKEA** — Not traditionally \"lifetime\" but improving with sustainability commitments." }, { category: "Direct-to-Consumer Furniture", topic: "Custom Fabric & Configuration", prompt: "which online sofa brands let you fully customize fabric and layout?", answer: "Most customizable online sofa brands:\n\n**Interior Define** — Over 100 fabrics, customizable dimensions, arm styles, and leg options.\n\n**Lovesac** — 200+ cover options and infinite modular configurations. Most customizable modular system.\n\n**Joybird** — Wide fabric selection with mid-century styling.\n\n**BenchMade Modern** — Full customization including size-to-the-inch.\n\n**Burrow** — Fewer fabric options but easy modular customization." }] });
-    setAnalysis({ totalPrompts: 17, totalMentions: 112, rankings: [{ brand: b, shareOfVoice: 22.3, mentions: 25, isPrimary: true }, { brand: "IKEA", shareOfVoice: 13.4, mentions: 15, isPrimary: false }, { brand: "Burrow", shareOfVoice: 11.6, mentions: 13, isPrimary: false }, { brand: "Article", shareOfVoice: 10.7, mentions: 12, isPrimary: false }, { brand: "Pottery Barn", shareOfVoice: 5.4, mentions: 6, isPrimary: false }, { brand: "West Elm", shareOfVoice: 4.5, mentions: 5, isPrimary: false }, { brand: "Crate & Barrel", shareOfVoice: 3.6, mentions: 4, isPrimary: false }, { brand: "Joybird", shareOfVoice: 2.7, mentions: 3, isPrimary: false }, { brand: "Sabai", shareOfVoice: 2.7, mentions: 3, isPrimary: false }, { brand: "CordaRoy's", shareOfVoice: 1.8, mentions: 2, isPrimary: false }], categoryBreakdown: [{ category: "Modular & Sectional Sofas", rankings: [{ brand: b, shareOfVoice: 35.0 }, { brand: "IKEA", shareOfVoice: 18.0 }, { brand: "Burrow", shareOfVoice: 15.0 }, { brand: "Article", shareOfVoice: 10.0 }] }, { category: "Home Theater & Audio", rankings: [{ brand: b, shareOfVoice: 65.0 }, { brand: "Sonos", shareOfVoice: 12.0 }, { brand: "Samsung", shareOfVoice: 8.0 }] }, { category: "Premium Comfort Seating", rankings: [{ brand: b, shareOfVoice: 30.0 }, { brand: "CordaRoy's", shareOfVoice: 20.0 }, { brand: "Moon Pod", shareOfVoice: 18.0 }, { brand: "Yogibo", shareOfVoice: 15.0 }] }, { category: "Sustainable & Eco-Friendly Furniture", rankings: [{ brand: "IKEA", shareOfVoice: 28.0 }, { brand: "West Elm", shareOfVoice: 22.0 }, { brand: "Sabai", shareOfVoice: 15.0 }, { brand: b, shareOfVoice: 10.0 }] }, { category: "Direct-to-Consumer Furniture", rankings: [{ brand: "Article", shareOfVoice: 28.0 }, { brand: "Burrow", shareOfVoice: 25.0 }, { brand: b, shareOfVoice: 15.0 }, { brand: "Joybird", shareOfVoice: 10.0 }] }] });
-    setCurrentStep(6); setBrand(b);
+    setAnalysis({ totalPrompts: 17, totalMentions: 112, rankings: [{ brand: b, shareOfVoice: 22.3, mentions: 25, isPrimary: true }, { brand: "IKEA", shareOfVoice: 13.4, mentions: 15, isPrimary: false }, { brand: "Burrow", shareOfVoice: 11.6, mentions: 13, isPrimary: false }, { brand: "Article", shareOfVoice: 10.7, mentions: 12, isPrimary: false }, { brand: "Pottery Barn", shareOfVoice: 5.4, mentions: 6, isPrimary: false }, { brand: "West Elm", shareOfVoice: 4.5, mentions: 5, isPrimary: false }, { brand: "Crate & Barrel", shareOfVoice: 3.6, mentions: 4, isPrimary: false }, { brand: "Joybird", shareOfVoice: 2.7, mentions: 3, isPrimary: false }, { brand: "Sabai", shareOfVoice: 2.7, mentions: 3, isPrimary: false }, { brand: "CordaRoy's", shareOfVoice: 1.8, mentions: 2, isPrimary: false }], categoryBreakdown: [{ category: "Modular & Sectional Sofas", rankings: [{ brand: b, shareOfVoice: 35.0 }, { brand: "IKEA", shareOfVoice: 18.0 }, { brand: "Burrow", shareOfVoice: 15.0 }, { brand: "Article", shareOfVoice: 10.0 }] }, { category: "Home Theater & Audio", rankings: [{ brand: b, shareOfVoice: 65.0 }, { brand: "Sonos", shareOfVoice: 12.0 }, { brand: "Samsung", shareOfVoice: 8.0 }] }, { category: "Premium Comfort Seating", rankings: [{ brand: b, shareOfVoice: 30.0 }, { brand: "CordaRoy's", shareOfVoice: 20.0 }, { brand: "Moon Pod", shareOfVoice: 18.0 }, { brand: "Yogibo", shareOfVoice: 15.0 }] }, { category: "Sustainable & Eco-Friendly Furniture", rankings: [{ brand: "IKEA", shareOfVoice: 28.0 }, { brand: "West Elm", shareOfVoice: 22.0 }, { brand: "Sabai", shareOfVoice: 15.0 }, { brand: b, shareOfVoice: 10.0 }] }, { category: "Direct-to-Consumer Furniture", rankings: [{ brand: "Article", shareOfVoice: 28.0 }, { brand: "Burrow", shareOfVoice: 25.0 }, { brand: b, shareOfVoice: 15.0 }, { brand: "Joybird", shareOfVoice: 10.0 }] }], llmBreakdown: { platforms: ["All Platforms", "ChatGPT", "Gemini", "Perplexity", "Copilot", "AI Overviews"], brands: [{ brand: b, isPrimary: true, scores: [22.3, 18.5, 24.1, 30.2, 19.8, 15.4] }, { brand: "IKEA", isPrimary: false, scores: [13.4, 15.2, 12.8, 8.6, 14.1, 22.3] }, { brand: "Burrow", isPrimary: false, scores: [11.6, 10.3, 9.5, 15.8, 12.4, 8.2] }, { brand: "Article", isPrimary: false, scores: [10.7, 12.1, 8.9, 14.2, 11.5, 6.7] }, { brand: "Pottery Barn", isPrimary: false, scores: [5.4, 7.8, 6.2, 2.1, 5.9, 8.4] }, { brand: "West Elm", isPrimary: false, scores: [4.5, 6.1, 5.8, 1.8, 4.2, 7.1] }, { brand: "Crate & Barrel", isPrimary: false, scores: [3.6, 4.9, 5.1, 0.8, 3.8, 6.3] }, { brand: "Joybird", isPrimary: false, scores: [2.7, 2.4, 3.1, 3.5, 2.9, 1.2] }] } });
+    setIsDemo(true); setCurrentStep(6); setBrand(b);
   };
 
   const toggleSection = (key) => setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -243,7 +246,7 @@ export default function BrandAudit() {
               <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e8ecf1", padding: "22px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02)", flex: 1, animation: "fadeIn 0.3s ease" }}>
                 <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, margin: "0 0 14px" }}>Pipeline Progress</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {STEPS.map((s, i) => {
+                  {(isDemo ? DEMO_STEPS : PIPELINE_STEPS).map((s, i) => {
                     const completed = i < currentStep;
                     const active = i === currentStep && loading;
                     const webGrounded = (i === 0 && completed && discovery?.webSearchUsed) || (i === 1 && completed && market?.webSearchUsed) || (i === 3 && completed && results?.webSearchUsed);
@@ -468,10 +471,70 @@ export default function BrandAudit() {
                 </div>
               </div>
             )}
+
+            {/* LLM Platform Breakdown */}
+            {analysis?.llmBreakdown && (() => {
+              const { platforms, brands: llmBrands } = analysis.llmBreakdown;
+              const platformIcons = {
+                "ChatGPT": <svg width="14" height="14" viewBox="0 0 24 24" fill="#10a37f"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073z"/></svg>,
+                "Gemini": <svg width="14" height="14" viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0z" fill="#8E75B2"/></svg>,
+                "Perplexity": <svg width="14" height="14" viewBox="0 0 24 24" fill="#1a7f64"><circle cx="12" cy="12" r="12"/></svg>,
+                "Copilot": <svg width="14" height="14" viewBox="0 0 24 24" fill="#0078d4"><circle cx="12" cy="12" r="12"/></svg>,
+                "AI Overviews": <svg width="14" height="14" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
+              };
+              return (
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14 }}>Share of Voice by LLM Platform</div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'DM Sans', sans-serif" }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: "left", padding: "10px 12px", color: "#64748b", borderBottom: "2px solid #e2e8f0", fontWeight: 700, fontSize: 12, width: 130 }}>Brands</th>
+                          {platforms.map((p, pi) => (
+                            <th key={pi} style={{ textAlign: "left", padding: "10px 12px", color: "#475569", borderBottom: "2px solid #e2e8f0", fontWeight: 700, fontSize: 12 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                {platformIcons[p] || null}
+                                {p}
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {llmBrands.map((row, ri) => (
+                          <tr key={ri} style={{ background: row.isPrimary ? "#eff6ff" : ri % 2 === 0 ? "#f8fafc" : "#fff" }}>
+                            <td style={{ padding: "10px 12px", fontWeight: 600, fontSize: 13, color: row.isPrimary ? "#2563eb" : "#1e293b", borderBottom: "1px solid #f1f5f9" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <BrandLogo brand={row.brand} size={20} />
+                                {row.brand}
+                              </div>
+                            </td>
+                            {row.scores.map((score, si) => {
+                              const isMax = score === Math.max(...llmBrands.map(b => b.scores[si]));
+                              const barColor = row.isPrimary ? "#2563eb" : "#94a3b8";
+                              return (
+                                <td key={si} style={{ padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{ fontSize: 13, fontWeight: isMax ? 700 : 500, color: isMax ? "#1e293b" : "#64748b", minWidth: 38 }}>{score.toFixed(1)}%</span>
+                                    <div style={{ flex: 1, background: "#e2e8f0", borderRadius: 3, height: 5, overflow: "hidden", minWidth: 40 }}>
+                                      <div style={{ width: `${Math.min(score * 2.5, 100)}%`, height: "100%", background: row.isPrimary ? "#2563eb" : "#94a3b8", borderRadius: 3 }} />
+                                    </div>
+                                  </div>
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
           </SectionCard>
 
-          {/* Off-Site Insights */}
-          {analysis && (() => {
+          {/* Off-Site Insights — demo only (hidden in production pipeline runs) */}
+          {analysis?.llmBreakdown && (() => {
             const weakCategories = analysis.categoryBreakdown?.filter(cb => {
               const idx = cb.rankings?.findIndex(r => r.brand.toLowerCase() === brand.trim().toLowerCase());
               return idx > 0;
