@@ -40,15 +40,14 @@ ${productList || "(none identified)"}
 SERVICES:
 ${serviceList || "(none identified)"}
 ${searchBlock}
-Identify the broader MARKET categories and topics that are relevant to this industry — not just what this brand does, but what the entire market covers. This should include areas where competitors may be strong even if this brand is weak.
-
-For each category, provide specific topics that real users would search for when looking for solutions in this space.
+Identify the broader MARKET categories and sub-topics that are relevant to this industry — not just what this brand does, but what the entire market covers. This should include areas where competitors may be strong even if this brand is weak.
 
 IMPORTANT:
 - Return at most 5 categories, at most 3 topics per category
-- Categories should represent the MARKET landscape, not just this brand's product lines
+- Categories are the main market segments (e.g., "Performance Athletic Footwear", "Creative Design & Image Editing Software")
+- Topics are SUB-CATEGORIES within each category — short noun phrases, NOT questions or prompts (e.g., "Marathon Running Shoes", "Trail Running Footwear", "Photo Retouching & Compositing", "Vector Illustration & Branding")
+- Topics should be 2-5 words, written as category labels, not as search queries
 - Include categories where competitors might dominate
-- Topics should be specific enough to generate search queries (e.g., "photo retouching and skin correction" not just "editing")
 
 Return this exact JSON structure:
 {

@@ -30,7 +30,8 @@ RULES:
 - Do NOT mention any specific brand name
 - Keep each prompt SHORT — one sentence, under 15 words ideally
 - Write as simple, direct questions — not long paragraphs
-- Mix question styles: "what is the best...", "which ... has the best...", "top ... for ...", "best ... compared to ...", etc.
+- Every prompt MUST end with a question mark (?)
+- Mix question styles: "what is the best...?", "which ... has the best...?", "what are the top ... for ...?", etc.
 - Do not reference any year
 
 Here are the categories and topics to cover:
@@ -39,11 +40,11 @@ ${categoryList}
 Generate exactly 3 prompts per topic.
 
 Good examples:
-- "what is the best SUV on the market"
-- "which car manufacturer has the best comfort quality"
-- "best photo editing software for professionals"
-- "top project management tools for small teams"
-- "what video editor do most YouTubers use"
+- "what is the best SUV on the market?"
+- "which car manufacturer has the best comfort quality?"
+- "what is the best photo editing software for professionals?"
+- "what are the top project management tools for small teams?"
+- "what video editor do most YouTubers use?"
 
 Return this exact JSON structure:
 {
