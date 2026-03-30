@@ -5,7 +5,8 @@ import { webSearch } from "../../../lib/search.js";
 
 export async function POST(req) {
   const body = await req.json();
-  const { brand } = body;
+  const { brand, region } = body;
+  const regionCode = region || "US";
 
   if (!brand?.trim()) {
     return Response.json({ error: "Brand name is required." }, { status: 400 });
@@ -13,12 +14,16 @@ export async function POST(req) {
 
   const providerConfig = extractProviderConfig(body);
 
-  // Web search for up-to-date brand info
-  const searchContext = await webSearch(`${brand.trim()} company products services overview`);
+  // Web search for up-to-date brand info, region-specific
+  const searchContext = await webSearch(`${brand.trim()} company products services overview ${regionCode}`);
 
   const searchBlock = searchContext
     ? `\n\nHere are recent web search results about "${brand.trim()}":\n\n${searchContext}\n\nUse these search results to provide accurate, up-to-date information. Prefer facts from the search results over your training data when they conflict.`
     : "";
+
+  const regionInstruction = regionCode !== "Global"
+    ? `Focus specifically on the ${regionCode} market — products, services, and positioning relevant to customers in ${regionCode}.`
+    : "Consider the brand's global presence across all markets.";
 
   const messages = [
     {
@@ -27,10 +32,12 @@ export async function POST(req) {
     },
     {
       role: "user",
-      content: `Analyze the brand "${brand.trim()}" and identify:
+      content: `Analyze the brand "${brand.trim()}" in the ${regionCode} market and identify:
 1. The industry it operates in
-2. Its main products (with brief descriptions)
-3. Its main services (with brief descriptions)
+2. Its main products available in ${regionCode} (with brief descriptions)
+3. Its main services available in ${regionCode} (with brief descriptions)
+
+${regionInstruction}
 ${searchBlock}
 Return this exact JSON structure:
 {
