@@ -195,7 +195,7 @@ export default function BrandAudit() {
       const prm = await callAPI("/api/generate-prompts", { industry: disc.industry, categories: mkt.categories, region });
       setPrompts(prm);
       setCurrentStep(3);
-      const execResults = await callAPI("/api/execute-prompts", { prompts: prm.prompts, brand: brand.trim() });
+      const execResults = await callAPI("/api/execute-prompts", { prompts: prm.prompts, brand: brand.trim(), region });
       setResults(execResults);
       setCurrentStep(4);
       const sov = await callAPI("/api/analyze-sov", { brand: brand.trim(), results: execResults.results });

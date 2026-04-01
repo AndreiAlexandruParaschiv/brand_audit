@@ -6,7 +6,7 @@ import { join } from "path";
 
 export async function POST(req) {
   const body = await req.json();
-  const { prompts, brand } = body;
+  const { prompts, brand, region } = body;
 
   if (!prompts?.length) {
     return Response.json({ error: "Prompts array is required." }, { status: 400 });
@@ -29,7 +29,7 @@ export async function POST(req) {
   try {
     const settled = await Promise.allSettled(
       providers.map(async (providerKey) => {
-        const jobId = await submitJob({ providerKey, prompts: drsPrompts, metadata });
+        const jobId = await submitJob({ providerKey, prompts: drsPrompts, metadata, country: region });
         const completedJob = await waitForCompletion(jobId);
         if (!completedJob.result_url) {
           throw new Error(`DRS job ${jobId} completed but no result_url was returned.`);
