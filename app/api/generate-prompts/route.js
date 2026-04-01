@@ -3,7 +3,8 @@ import { callLLMJSON, extractProviderConfig } from "../../../lib/llm.js";
 
 export async function POST(req) {
   const body = await req.json();
-  const { industry, categories } = body;
+  const { industry, categories, region } = body;
+  const regionCode = region || "US";
 
   if (!industry || !categories?.length) {
     return Response.json({ error: "Industry and categories are required." }, { status: 400 });
@@ -24,7 +25,7 @@ export async function POST(req) {
     },
     {
       role: "user",
-      content: `For the industry "${industry}", generate short, natural questions that someone would ask an AI assistant or search engine.
+      content: `For the industry "${industry}" in the ${regionCode} market, generate short, natural questions that someone in ${regionCode} would ask an AI assistant or search engine.
 
 RULES:
 - Do NOT mention any specific brand name
@@ -33,6 +34,7 @@ RULES:
 - Every prompt MUST end with a question mark (?)
 - Mix question styles: "what is the best...?", "which ... has the best...?", "what are the top ... for ...?", etc.
 - Do not reference any year
+- Questions should reflect what consumers in ${regionCode} would ask (e.g., local terminology, regional preferences)
 
 Here are the categories and topics to cover:
 ${categoryList}
