@@ -12,6 +12,7 @@ const PIPELINE_STEPS = [
   "Executing Prompts",
   "Analyzing Share of Voice",
   "Cited Sources",
+  "Source Comparison",
 ];
 
 const DEMO_STEPS = [
@@ -407,7 +408,7 @@ export default function BrandAudit() {
       setCurrentStep(4);
       const sov = await callAPI("/api/analyze-sov", { brand: brand.trim(), results: execResults.results });
       setAnalysis(sov);
-      setCurrentStep(6);
+      setCurrentStep(7);
     } catch (e) { setError(e.message || "Something went wrong."); } finally { setLoading(false); }
   };
 
@@ -508,7 +509,7 @@ export default function BrandAudit() {
     _demoExec.results = attachDemoSources(_demoExec.results);
     setResults(_demoExec);
     setAnalysis({ totalPrompts: 51, totalMentions: 2800, rankings: [{ brand: "Dick's Sporting Goods", shareOfVoice: 18.2, mentions: 510, isPrimary: false }, { brand: "Amazon", shareOfVoice: 14.6, mentions: 409, isPrimary: false }, { brand: "Walmart", shareOfVoice: 11.4, mentions: 319, isPrimary: false }, { brand: "Nike", shareOfVoice: 8.9, mentions: 249, isPrimary: false }, { brand: b, shareOfVoice: 6.8, mentions: 190, isPrimary: true }, { brand: "REI", shareOfVoice: 6.1, mentions: 171, isPrimary: false }, { brand: "Under Armour", shareOfVoice: 5.4, mentions: 151, isPrimary: false }, { brand: "Foot Locker", shareOfVoice: 4.3, mentions: 120, isPrimary: false }, { brand: "Adidas", shareOfVoice: 3.6, mentions: 101, isPrimary: false }, { brand: "Bass Pro Shops", shareOfVoice: 2.9, mentions: 81, isPrimary: false }], categoryBreakdown: [{ category: "Athletic Footwear", rankings: [{ brand: "Nike", shareOfVoice: 28.0 }, { brand: "Dick's Sporting Goods", shareOfVoice: 20.0 }, { brand: "Foot Locker", shareOfVoice: 16.0 }, { brand: b, shareOfVoice: 12.0 }, { brand: "Under Armour", shareOfVoice: 8.0 }] }, { category: "Outdoor & Camping", rankings: [{ brand: "REI", shareOfVoice: 26.0 }, { brand: "Bass Pro Shops", shareOfVoice: 18.0 }, { brand: b, shareOfVoice: 15.0 }, { brand: "Amazon", shareOfVoice: 12.0 }, { brand: "Walmart", shareOfVoice: 9.0 }] }, { category: "Fitness Equipment", rankings: [{ brand: "Amazon", shareOfVoice: 24.0 }, { brand: "Dick's Sporting Goods", shareOfVoice: 18.0 }, { brand: "Walmart", shareOfVoice: 14.0 }, { brand: "Peloton", shareOfVoice: 10.0 }, { brand: b, shareOfVoice: 6.0 }] }, { category: "Team & Youth Sports", rankings: [{ brand: "Dick's Sporting Goods", shareOfVoice: 24.0 }, { brand: b, shareOfVoice: 20.0 }, { brand: "Amazon", shareOfVoice: 14.0 }, { brand: "Walmart", shareOfVoice: 12.0 }, { brand: "Rawlings", shareOfVoice: 8.0 }] }, { category: "Sporting Goods Retail", rankings: [{ brand: "Dick's Sporting Goods", shareOfVoice: 22.0 }, { brand: "Amazon", shareOfVoice: 18.0 }, { brand: b, shareOfVoice: 15.0 }, { brand: "Walmart", shareOfVoice: 12.0 }, { brand: "REI", shareOfVoice: 8.0 }] }], llmBreakdown: { platforms: ["All Platforms", "ChatGPT", "Gemini", "Perplexity", "Copilot", "AI Overviews"], brands: [{ brand: "Dick's Sporting Goods", isPrimary: false, scores: [18.2, 20.1, 17.4, 15.8, 19.3, 22.6] }, { brand: "Amazon", isPrimary: false, scores: [14.6, 16.8, 13.9, 11.2, 15.4, 17.8] }, { brand: "Walmart", isPrimary: false, scores: [11.4, 12.3, 10.8, 9.6, 12.1, 13.5] }, { brand: "Nike", isPrimary: false, scores: [8.9, 8.2, 10.1, 9.4, 8.6, 7.8] }, { brand: b, isPrimary: true, scores: [6.8, 5.2, 6.1, 9.4, 7.8, 4.1] }, { brand: "REI", isPrimary: false, scores: [6.1, 5.9, 7.2, 8.3, 6.0, 4.2] }, { brand: "Under Armour", isPrimary: false, scores: [5.4, 5.9, 4.8, 4.2, 5.6, 5.1] }, { brand: "Bass Pro Shops", isPrimary: false, scores: [2.9, 2.4, 3.5, 4.1, 2.8, 1.9] }] } });
-    setIsDemo(true); setCurrentStep(7); setBrand(b);
+    setIsDemo(true); setCurrentStep(8); setBrand(b);
   };
 
   const toggleSection = (key) => setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
