@@ -1036,14 +1036,14 @@ export default function BrandAudit() {
                                             const topicKey = `src_topic_${kind}_${cat}_${ti}`;
                                             const topicOpen = expandedCategories[topicKey];
                                             return (
-                                              <div key={ti}>
-                                                <button onClick={() => toggleCategory(topicKey)} style={{ background: "none", border: "none", padding: "4px 0", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, width: "100%" }}>
+                                              <div key={ti} style={{ border: "1px solid #e8ecf1", borderRadius: 8, overflow: "hidden" }}>
+                                                <button onClick={() => toggleCategory(topicKey)} style={{ background: "#f8fafc", border: "none", borderBottom: topicOpen ? "1px solid #e8ecf1" : "none", padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, width: "100%", textAlign: "left" }}>
                                                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transform: topicOpen ? "rotate(0)" : "rotate(-90deg)", transition: "transform 0.2s", flexShrink: 0 }}><path d="M2 3.5l3 3 3-3" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                                   <span style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", textTransform: "uppercase", letterSpacing: 0.8 }}>{topic}</span>
-                                                  <span style={{ fontSize: 10, color: "#94a3b8" }}>({entries.length})</span>
+                                                  <span style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500 }}>({entries.length})</span>
                                                 </button>
                                                 {topicOpen && (
-                                                  <div style={{ marginTop: 5, display: "flex", flexDirection: "column", gap: 5, paddingLeft: 16 }}>
+                                                  <div style={{ display: "flex", flexDirection: "column", gap: 5, padding: "8px 10px" }}>
                                                     {entries.map((entry, j) => (
                                                       <SourceRow key={j} entry={entry} kind={kind} accent={color} compact />
                                                     ))}
@@ -1082,6 +1082,7 @@ export default function BrandAudit() {
                 accentColor="#6366f1"
                 icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6"/><circle cx="18" cy="7" r="3"/><circle cx="6" cy="14" r="3"/></svg>}
                 title="Source Comparison"
+                badge="Upload CSV to compare"
                 isOpen={isSectionOpen("compare")}
                 onToggle={() => toggleSection("compare")}
               >
