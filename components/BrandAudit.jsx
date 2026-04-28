@@ -1069,9 +1069,9 @@ export default function BrandAudit() {
                             </div>
                           ) : (
                             <>
-                              {/* Top global */}
+                              {/* All sources, sorted by citation count */}
                               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-                                {top.slice(0, 5).map((entry, i) => (
+                                {top.map((entry, i) => (
                                   <SourceRow key={i} entry={entry} kind={kind} accent={color} />
                                 ))}
                               </div>
