@@ -23,12 +23,14 @@ export async function POST(req) {
     const batchResults = await Promise.allSettled(
       batch.map(async (p) => {
         // Web search for each prompt to ground answers in real data
-        const searchContext = await webSearch(p.prompt, 3);
+        const searchResult = await webSearch(p.prompt, 5);
+        const searchContext = searchResult?.context;
+        const sources = searchResult?.sources ?? [];
         if (searchContext) searchCount++;
 
         const systemContent = searchContext
-          ? `You are a helpful assistant. Use the following web search results as your primary source:\n\n${searchContext}\n\nBased on these results and your knowledge, answer the user's question thoroughly. Recommend specific tools, products, or services by name. Be specific and mention actual brand names.`
-          : "You are a helpful assistant. Answer the user's question thoroughly, recommending specific tools, products, or services by name. Be specific and mention actual brand names.";
+          ? `You are a knowledgeable assistant. Use the following web search results as your primary source of facts:\n\n${searchContext}\n\nAnswer the user's question thoroughly and naturally. Where relevant, reference the source by publication name inline (e.g. "according to Wirecutter" or "Runner's World recommends"). Mention specific brand names, product names, and where to buy. Be helpful and direct.`
+          : `You are a knowledgeable assistant. Answer the user's question thoroughly. Mention specific brand names, product names, and where to buy. Be helpful and direct.`;
 
         const messages = [
           { role: "system", content: systemContent },
@@ -38,7 +40,7 @@ export async function POST(req) {
         const answer = await callLLM({
           messages,
           providerConfig,
-          options: { maxTokens: 1024 },
+          options: { maxTokens: 2048 },
         });
 
         return {
@@ -46,6 +48,7 @@ export async function POST(req) {
           topic: p.topic,
           prompt: p.prompt,
           answer,
+          sources,
         };
       })
     );
