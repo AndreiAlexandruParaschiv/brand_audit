@@ -107,6 +107,9 @@ function inlineFormat(text) {
   s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong style='color:#1e293b'>$1</strong>");
   // Italic
   s = s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
+  // Bare domain names in parentheses like (example.com) or (www.example.com) — not already linked
+  s = s.replace(/\((?!<a )((?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s)]*)?)\)/g, (_, domain) =>
+    `(<a href="https://${domain}" target="_blank" rel="noopener noreferrer" style="color:#0ea5e9;font-weight:500;text-decoration:underline;word-break:break-all">${domain}&nbsp;↗</a>)`);
   return s;
 }
 
