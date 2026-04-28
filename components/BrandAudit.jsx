@@ -95,30 +95,99 @@ function BrandLogo({ brand, size = 28 }) {
   );
 }
 
-// Simple markdown renderer for LLM answers
+function inlineFormat(text) {
+  let s = text;
+  // Markdown links [label](url) — render as highlighted clickable link
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, (_, label, url) =>
+    `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#0ea5e9;font-weight:600;text-decoration:underline;word-break:break-all">${label}&nbsp;↗</a>`);
+  // Bare https?:// URLs not already inside href="..."
+  s = s.replace(/(?<!href=")(https?:\/\/[^\s<>")\]]+)/g, (url) =>
+    `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#0ea5e9;font-weight:500;text-decoration:underline;word-break:break-all">${url}&nbsp;↗</a>`);
+  // Bold
+  s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong style='color:#1e293b'>$1</strong>");
+  // Italic
+  s = s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
+  return s;
+}
+
+const TABLE_SEP = /^\|[\s\-|:]+\|$/;
+
 function RenderAnswer({ text }) {
   if (!text) return null;
   const lines = text.split("\n");
-  return (
-    <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.7 }}>
-      {lines.map((line, i) => {
-        const trimmed = line.trimStart();
-        if (trimmed.startsWith("# ")) return <h3 key={i} style={{ fontSize: 16, fontWeight: 700, color: "#1e293b", margin: "12px 0 6px" }}>{trimmed.slice(2)}</h3>;
-        if (trimmed.startsWith("## ")) return <h4 key={i} style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", margin: "10px 0 4px" }}>{trimmed.slice(3)}</h4>;
-        if (trimmed.startsWith("### ")) return <h5 key={i} style={{ fontSize: 13, fontWeight: 700, color: "#334155", margin: "8px 0 4px" }}>{trimmed.slice(4)}</h5>;
-        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-          const content = trimmed.slice(2);
-          return <div key={i} style={{ display: "flex", gap: 8, marginLeft: 8, marginBottom: 2 }}><span style={{ color: "#94a3b8", flexShrink: 0 }}>&bull;</span><span dangerouslySetInnerHTML={{ __html: boldify(content) }} /></div>;
-        }
-        if (!trimmed) return <div key={i} style={{ height: 6 }} />;
-        return <p key={i} style={{ margin: "2px 0" }} dangerouslySetInnerHTML={{ __html: boldify(trimmed) }} />;
-      })}
-    </div>
-  );
-}
+  const elements = [];
+  let i = 0;
 
-function boldify(text) {
-  return text.replace(/\*\*(.+?)\*\*/g, "<strong style='color:#1e293b'>$1</strong>");
+  while (i < lines.length) {
+    const trimmed = lines[i].trimStart();
+
+    // Table: collect consecutive | lines
+    if (trimmed.startsWith("|")) {
+      const tableLines = [];
+      while (i < lines.length && lines[i].trimStart().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      const rows = tableLines.filter(l => !TABLE_SEP.test(l.trim()));
+      const cells = (l) => l.split("|").slice(1, -1).map(c => c.trim());
+      if (rows.length > 0) {
+        elements.push(
+          <div key={`tbl${i}`} style={{ overflowX: "auto", margin: "10px 0" }}>
+            <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
+              <thead>
+                <tr>{cells(rows[0]).map((h, hi) => <th key={hi} style={{ border: "1px solid #e2e8f0", padding: "6px 10px", background: "#f8fafc", color: "#1e293b", fontWeight: 700, textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {rows.slice(1).map((row, ri) => (
+                  <tr key={ri} style={{ background: ri % 2 === 0 ? "#fff" : "#fafbfc" }}>
+                    {cells(row).map((cell, ci) => <td key={ci} style={{ border: "1px solid #e2e8f0", padding: "6px 10px", color: "#475569", verticalAlign: "top" }} dangerouslySetInnerHTML={{ __html: inlineFormat(cell) }} />)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+      continue;
+    }
+
+    // Headings
+    if (trimmed.startsWith("# "))   { elements.push(<h3 key={i} style={{ fontSize: 16, fontWeight: 700, color: "#1e293b", margin: "14px 0 6px" }} dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(2)) }} />); i++; continue; }
+    if (trimmed.startsWith("## "))  { elements.push(<h4 key={i} style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", margin: "12px 0 4px" }} dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(3)) }} />); i++; continue; }
+    if (trimmed.startsWith("### ")) { elements.push(<h5 key={i} style={{ fontSize: 13, fontWeight: 700, color: "#334155", margin: "10px 0 4px" }} dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(4)) }} />); i++; continue; }
+
+    // Numbered list
+    const numMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
+    if (numMatch) {
+      elements.push(
+        <div key={i} style={{ display: "flex", gap: 8, marginLeft: 8, marginBottom: 3 }}>
+          <span style={{ color: "#94a3b8", flexShrink: 0, fontWeight: 700, minWidth: 18 }}>{numMatch[1]}.</span>
+          <span dangerouslySetInnerHTML={{ __html: inlineFormat(numMatch[2]) }} />
+        </div>
+      );
+      i++; continue;
+    }
+
+    // Bullet list
+    if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      elements.push(
+        <div key={i} style={{ display: "flex", gap: 8, marginLeft: 8, marginBottom: 3 }}>
+          <span style={{ color: "#94a3b8", flexShrink: 0, marginTop: 1 }}>&bull;</span>
+          <span dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed.slice(2)) }} />
+        </div>
+      );
+      i++; continue;
+    }
+
+    // Blank line
+    if (!trimmed) { elements.push(<div key={i} style={{ height: 6 }} />); i++; continue; }
+
+    // Paragraph
+    elements.push(<p key={i} style={{ margin: "2px 0" }} dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed) }} />);
+    i++;
+  }
+
+  return <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.8 }}>{elements}</div>;
 }
 
 // Collapsible section with accent color
