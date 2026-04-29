@@ -18,6 +18,7 @@ const DEMO_STEPS = [
 const PROVIDER_LABELS = {
   chatgpt_free: "ChatGPT",
   google_aimode: "Google AI Mode",
+  google_ai_overviews: "Google AI Overviews",
   gemini: "Gemini",
   copilot: "Copilot",
   perplexity: "Perplexity",

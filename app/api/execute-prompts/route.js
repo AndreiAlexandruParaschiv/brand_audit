@@ -1,8 +1,8 @@
 // app/api/execute-prompts/route.js
-import { submitJob, waitForCompletion, downloadResult, getAvailableProviders } from "../../../lib/drs.js";
+import { submitJob, waitForCompletion, downloadResult, getAvailableProviders, normalizeProviderResults } from "../../../lib/drs.js";
 import { lookupSiteMetadata } from "../../../lib/llmo.js";
-import { writeFile } from "fs/promises";
-import { join } from "path";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export async function POST(req) {
   const body = await req.json();
@@ -52,22 +52,10 @@ export async function POST(req) {
       jobIds[providerKey] = jobId;
       succeededProviders.push(providerKey);
 
-      const resultArray = Array.isArray(drsResults) ? drsResults : [drsResults];
-      for (const dr of resultArray) {
-        const idx = dr.input?.index ?? 0;
-        const originalPrompt = prompts[idx] || {};
-        allResults.push({
-          provider: providerKey,
-          category: originalPrompt.category,
-          topic: originalPrompt.topic,
-          prompt: originalPrompt.prompt,
-          answer: dr.answer_text || "",
-          citations: dr.citations || [],
-        });
-      }
+      allResults.push(...normalizeProviderResults({ providerKey, drsResults, prompts }));
     }
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
     const debugPath = join(process.cwd(), `drs-results-${timestamp}.json`);
     await writeFile(debugPath, JSON.stringify(allResults, null, 2));
     console.log(`DRS aggregated results written to ${debugPath}`);
