@@ -1129,14 +1129,14 @@ export default function BrandAudit() {
             </div>
           )}
 
-          {/* Source Comparison — upload a ChatGPT reference CSV to compare */}
+          {/* Source Comparison — upload an LLMO export CSV to compare against Off-Site Market Discovery */}
           {results && (
             <div style={{ marginTop: 20 }}>
               <SectionCard
                 accentColor="#6366f1"
                 icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6"/><circle cx="18" cy="7" r="3"/><circle cx="6" cy="14" r="3"/></svg>}
                 title="Source Comparison"
-                badge="Upload CSV to compare"
+                badge="Upload LLMO CSV to compare"
                 isOpen={isSectionOpen("compare")}
                 onToggle={() => toggleSection("compare")}
               >
@@ -1144,8 +1144,8 @@ export default function BrandAudit() {
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "28px 0" }}>
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>Upload a ChatGPT Reference CSV</div>
-                      <div style={{ fontSize: 12, color: "#64748b", maxWidth: 400, lineHeight: 1.6 }}>Compare this run's cited sources against a ChatGPT-cited URL dataset. Expected columns: URL, Content Type, Times Cited, Prompts Cited In, Categories.</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>Upload an LLMO Export CSV</div>
+                      <div style={{ fontSize: 12, color: "#64748b", maxWidth: 420, lineHeight: 1.6 }}>Compare Off-Site Market Discovery against a URL dataset exported from Adobe LLM Optimizer. Expected columns: URL, Content Type, Times Cited, Prompts Cited In, Categories.</div>
                     </div>
                     <label style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#6366f1", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, color: "#fff", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1161,7 +1161,7 @@ export default function BrandAudit() {
                     {/* Replace button */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                       <div style={{ fontSize: 12, color: "#64748b" }}>
-                        Reference: <strong style={{ color: "#1e293b" }}>{referenceData.length.toLocaleString()} rows</strong> loaded · branded sources excluded from both sets
+                        LLMO export: <strong style={{ color: "#1e293b" }}>{referenceData.length.toLocaleString()} rows</strong> loaded · branded sources excluded from both sets
                       </div>
                       <label style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #6366f1", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: "#6366f1", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -1179,9 +1179,9 @@ export default function BrandAudit() {
                       return (
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                           {[
-                            { label: "Shared Sources", value: totalOverlap, sub: `of ${totalRef} in reference`, color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
-                            { label: "App Discoveries", value: totalAppOnly, sub: "found by app only", color: "#6366f1", bg: "#eef2ff", border: "#c7d2fe" },
-                            { label: "ChatGPT-Only", value: totalRefOnly, sub: "not surfaced by app", color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
+                            { label: "Shared Sources", value: totalOverlap, sub: `of ${totalRef} in LLMO`, color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
+                            { label: "Off-Site Market Discovery", value: totalAppOnly, sub: "found by Off-Site only", color: "#6366f1", bg: "#eef2ff", border: "#c7d2fe" },
+                            { label: "LLMO-Only", value: totalRefOnly, sub: "not surfaced by Off-Site", color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
                           ].map(({ label, value, sub, color, bg, border }) => (
                             <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 10, padding: "14px 16px", textAlign: "center" }}>
                               <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
@@ -1207,8 +1207,8 @@ export default function BrandAudit() {
                           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>{label}</span>
                             <span style={{ fontSize: 11, background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#10b981", borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>{overlap.length} shared</span>
-                            <span style={{ fontSize: 11, background: "#eef2ff", border: "1px solid #c7d2fe", color: "#6366f1", borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>{appOnly.length} app-only</span>
-                            <span style={{ fontSize: 11, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#94a3b8", borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>{refTotal} in reference</span>
+                            <span style={{ fontSize: 11, background: "#eef2ff", border: "1px solid #c7d2fe", color: "#6366f1", borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>{appOnly.length} Off-Site only</span>
+                            <span style={{ fontSize: 11, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#94a3b8", borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>{refTotal} in LLMO</span>
                           </div>
 
                           {/* Shared sources */}
@@ -1218,7 +1218,7 @@ export default function BrandAudit() {
                               <div style={{ marginBottom: 10 }}>
                                 <button onClick={() => toggleCategory(sharedKey)} style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "7px 12px", color: "#15803d", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, width: "100%", textAlign: "left", marginBottom: 6 }}>
                                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transform: expandedCategories[sharedKey] ? "rotate(0)" : "rotate(-90deg)", transition: "transform 0.2s" }}><path d="M2 3.5l3 3 3-3" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                  Shared with ChatGPT reference ({overlap.length})
+                                  Shared with LLMO ({overlap.length})
                                 </button>
                                 {expandedCategories[sharedKey] && (
                                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1233,7 +1233,7 @@ export default function BrandAudit() {
                                         </div>
                                         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                                           <span style={{ fontSize: 10, fontWeight: 700, color, background: `${color}11`, border: `1px solid ${color}33`, borderRadius: 4, padding: "2px 6px" }}>App {entry.count}x</span>
-                                          <span style={{ fontSize: 10, fontWeight: 700, color: "#10b981", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 4, padding: "2px 6px" }}>ChatGPT {entry.refTimesCited}x</span>
+                                          <span style={{ fontSize: 10, fontWeight: 700, color: "#10b981", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 4, padding: "2px 6px" }}>LLMO {entry.refTimesCited}x</span>
                                         </div>
                                       </a>
                                     ))}
@@ -1250,7 +1250,7 @@ export default function BrandAudit() {
                               <div>
                                 <button onClick={() => toggleCategory(discovKey)} style={{ background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 8, padding: "7px 12px", color: "#4338ca", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, width: "100%", textAlign: "left", marginBottom: 6 }}>
                                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transform: expandedCategories[discovKey] ? "rotate(0)" : "rotate(-90deg)", transition: "transform 0.2s" }}><path d="M2 3.5l3 3 3-3" stroke="#6366f1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                  App discoveries — not in ChatGPT reference ({appOnly.length})
+                                  Off-Site Market Discovery — not in LLMO ({appOnly.length})
                                 </button>
                                 {expandedCategories[discovKey] && (
                                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -1263,7 +1263,7 @@ export default function BrandAudit() {
                                           <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{entry.title || entry.url}</div>
                                           <div style={{ fontSize: 11, color: "#94a3b8" }}>{entry.host}</div>
                                         </div>
-                                        <span style={{ fontSize: 10, fontWeight: 700, color, background: `${color}11`, border: `1px solid ${color}33`, borderRadius: 4, padding: "2px 6px", flexShrink: 0 }}>App {entry.count}x</span>
+                                        <span style={{ fontSize: 10, fontWeight: 700, color, background: `${color}11`, border: `1px solid ${color}33`, borderRadius: 4, padding: "2px 6px", flexShrink: 0 }}>Off-Site {entry.count}x</span>
                                       </a>
                                     ))}
                                   </div>
