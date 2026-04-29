@@ -15,7 +15,8 @@ export async function POST(req) {
   const providerConfig = extractProviderConfig(body);
 
   // Web search for up-to-date brand info, region-specific
-  const searchContext = await webSearch(`${brand.trim()} company products services overview ${regionCode}`);
+  const searchResult = await webSearch(`${brand.trim()} company products services overview ${regionCode}`);
+  const searchContext = searchResult?.context;
 
   const searchBlock = searchContext
     ? `\n\nHere are recent web search results about "${brand.trim()}":\n\n${searchContext}\n\nUse these search results to provide accurate, up-to-date information. Prefer facts from the search results over your training data when they conflict.`
@@ -36,6 +37,8 @@ export async function POST(req) {
 1. The industry it operates in
 2. Its main products available in ${regionCode} (with brief descriptions)
 3. Its main services available in ${regionCode} (with brief descriptions)
+4. Its official web domains (root domains only, e.g. "lovesac.com", including any country-specific TLDs)
+5. Its official social media handles on Reddit, YouTube, Instagram, TikTok, X/Twitter, Facebook, and LinkedIn (only those it actually owns and operates)
 
 ${regionInstruction}
 ${searchBlock}
@@ -48,8 +51,15 @@ Return this exact JSON structure:
   ],
   "services": [
     { "name": "Service Name", "description": "Brief description" }
+  ],
+  "officialDomains": ["example.com"],
+  "socialHandles": [
+    { "platform": "youtube", "handle": "@BrandChannel" },
+    { "platform": "reddit", "handle": "r/Brand" }
   ]
-}`,
+}
+
+For officialDomains and socialHandles: only include channels you are confident the brand owns. Use empty arrays if uncertain. Do NOT invent handles.`,
     },
   ];
 
