@@ -327,6 +327,49 @@ const DEMO_TOPIC_SOURCES = {
   ],
 };
 
+// Demo LLMO reference dataset — hand-picked URLs designed to create a meaningful comparison story.
+// Schema matches the parsed LLMO CSV: { url, contentType, timesCited, promptsCitedIn, categories }.
+// Content Types: "Earned" = third-party off-site, "Others" = forums/Reddit, "Social" = YouTube/social.
+// "Owned" entries (brand-owned URLs) are intentionally absent — the off-site filter would skip them.
+const DEMO_LLMO_REFERENCE = [
+  // --- 8 URLs that overlap with DEMO_TOPIC_SOURCES (creates "Shared with LLMO") ---
+  { url: "https://www.runnersworld.com/gear/a20865505/best-running-shoes/", contentType: "Earned", timesCited: 24, promptsCitedIn: 18, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.outdoorgearlab.com/topics/shoes-and-boots/best-hiking-shoes", contentType: "Earned", timesCited: 19, promptsCitedIn: 15, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://barbend.com/best-crossfit-shoes/", contentType: "Earned", timesCited: 14, promptsCitedIn: 11, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.fieldandstream.com/gear/best-fishing-rod-combos/", contentType: "Earned", timesCited: 22, promptsCitedIn: 16, categories: "Hunting & Shooting Sports Equipment" },
+  { url: "https://www.garagegymreviews.com/best-home-gyms", contentType: "Earned", timesCited: 31, promptsCitedIn: 22, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.reddit.com/r/running/comments/1abcde1/best_marathon_shoes_2024/", contentType: "Others", timesCited: 12, promptsCitedIn: 9, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.reddit.com/r/homegym/comments/9gym1/budget_setup/", contentType: "Others", timesCited: 8, promptsCitedIn: 6, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.youtube.com/watch?v=runShoeReview1", contentType: "Social", timesCited: 6, promptsCitedIn: 5, categories: "Performance Footwear & Apparel" },
+
+  // --- 22 URLs only in LLMO (creates "LLMO-Only" gap) ---
+  // Earned (review/editorial sites)
+  { url: "https://www.wirecutter.com/reviews/best-running-shoes/", contentType: "Earned", timesCited: 28, promptsCitedIn: 21, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.gearpatrol.com/outdoors/best-hiking-boots/", contentType: "Earned", timesCited: 17, promptsCitedIn: 13, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://www.outsideonline.com/outdoor-gear/run/best-running-shoes/", contentType: "Earned", timesCited: 15, promptsCitedIn: 12, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.rei.com/learn/expert-advice/hiking-boots.html", contentType: "Earned", timesCited: 13, promptsCitedIn: 10, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://www.consumerreports.org/cro/treadmills/buying-guide/", contentType: "Earned", timesCited: 11, promptsCitedIn: 9, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.popularmechanics.com/adventure/outdoors/g26825349/best-camping-tents/", contentType: "Earned", timesCited: 9, promptsCitedIn: 7, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://www.travelandleisure.com/style/best-hiking-backpacks", contentType: "Earned", timesCited: 8, promptsCitedIn: 6, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://www.golfdigest.com/gallery/best-golf-clubs", contentType: "Earned", timesCited: 7, promptsCitedIn: 6, categories: "Athletic & Team Sports Equipment" },
+  { url: "https://www.tennis.com/news/articles/best-tennis-rackets", contentType: "Earned", timesCited: 6, promptsCitedIn: 5, categories: "Athletic & Team Sports Equipment" },
+  { url: "https://www.bicycling.com/bikes-gear/a20030529/best-road-bikes/", contentType: "Earned", timesCited: 6, promptsCitedIn: 5, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://www.t3.com/us/best-fitness-trackers", contentType: "Earned", timesCited: 5, promptsCitedIn: 4, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.fatherly.com/gear/best-youth-soccer-cleats", contentType: "Earned", timesCited: 5, promptsCitedIn: 4, categories: "Athletic & Team Sports Equipment" },
+  // Others (Reddit threads)
+  { url: "https://www.reddit.com/r/Sneakers/comments/llmo_only1/best_basketball_shoes_2025/", contentType: "Others", timesCited: 9, promptsCitedIn: 7, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.reddit.com/r/camping/comments/llmo_only2/2_person_tent_recommendations/", contentType: "Others", timesCited: 7, promptsCitedIn: 6, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://www.reddit.com/r/Fishing/comments/llmo_only3/saltwater_combo_under_200/", contentType: "Others", timesCited: 6, promptsCitedIn: 5, categories: "Hunting & Shooting Sports Equipment" },
+  { url: "https://www.reddit.com/r/golf/comments/llmo_only4/budget_iron_sets/", contentType: "Others", timesCited: 5, promptsCitedIn: 4, categories: "Athletic & Team Sports Equipment" },
+  { url: "https://www.reddit.com/r/Hunting/comments/llmo_only5/first_rifle_recommendations/", contentType: "Others", timesCited: 5, promptsCitedIn: 4, categories: "Hunting & Shooting Sports Equipment" },
+  { url: "https://www.reddit.com/r/bjj/comments/llmo_only6/best_gi_for_beginners/", contentType: "Others", timesCited: 4, promptsCitedIn: 3, categories: "Athletic & Team Sports Equipment" },
+  // Social (YouTube)
+  { url: "https://www.youtube.com/watch?v=llmoOnlyVid1", contentType: "Social", timesCited: 8, promptsCitedIn: 7, categories: "Performance Footwear & Apparel" },
+  { url: "https://www.youtube.com/watch?v=llmoOnlyVid2", contentType: "Social", timesCited: 5, promptsCitedIn: 4, categories: "Outdoor Recreation & Camping Gear" },
+  { url: "https://www.youtube.com/watch?v=llmoOnlyVid3", contentType: "Social", timesCited: 4, promptsCitedIn: 3, categories: "Hunting & Shooting Sports Equipment" },
+  { url: "https://www.youtube.com/watch?v=llmoOnlyVid4", contentType: "Social", timesCited: 3, promptsCitedIn: 3, categories: "Athletic & Team Sports Equipment" },
+];
+
 function attachDemoSources(resultsArr) {
   if (!Array.isArray(resultsArr)) return resultsArr;
   return resultsArr.map((r) => {
@@ -509,6 +552,7 @@ export default function BrandAudit() {
     _demoExec.results = attachDemoSources(_demoExec.results);
     setResults(_demoExec);
     setAnalysis({ totalPrompts: 51, totalMentions: 2800, rankings: [{ brand: "Dick's Sporting Goods", shareOfVoice: 18.2, mentions: 510, isPrimary: false }, { brand: "Amazon", shareOfVoice: 14.6, mentions: 409, isPrimary: false }, { brand: "Walmart", shareOfVoice: 11.4, mentions: 319, isPrimary: false }, { brand: "Nike", shareOfVoice: 8.9, mentions: 249, isPrimary: false }, { brand: b, shareOfVoice: 6.8, mentions: 190, isPrimary: true }, { brand: "REI", shareOfVoice: 6.1, mentions: 171, isPrimary: false }, { brand: "Under Armour", shareOfVoice: 5.4, mentions: 151, isPrimary: false }, { brand: "Foot Locker", shareOfVoice: 4.3, mentions: 120, isPrimary: false }, { brand: "Adidas", shareOfVoice: 3.6, mentions: 101, isPrimary: false }, { brand: "Bass Pro Shops", shareOfVoice: 2.9, mentions: 81, isPrimary: false }], categoryBreakdown: [{ category: "Athletic Footwear", rankings: [{ brand: "Nike", shareOfVoice: 28.0 }, { brand: "Dick's Sporting Goods", shareOfVoice: 20.0 }, { brand: "Foot Locker", shareOfVoice: 16.0 }, { brand: b, shareOfVoice: 12.0 }, { brand: "Under Armour", shareOfVoice: 8.0 }] }, { category: "Outdoor & Camping", rankings: [{ brand: "REI", shareOfVoice: 26.0 }, { brand: "Bass Pro Shops", shareOfVoice: 18.0 }, { brand: b, shareOfVoice: 15.0 }, { brand: "Amazon", shareOfVoice: 12.0 }, { brand: "Walmart", shareOfVoice: 9.0 }] }, { category: "Fitness Equipment", rankings: [{ brand: "Amazon", shareOfVoice: 24.0 }, { brand: "Dick's Sporting Goods", shareOfVoice: 18.0 }, { brand: "Walmart", shareOfVoice: 14.0 }, { brand: "Peloton", shareOfVoice: 10.0 }, { brand: b, shareOfVoice: 6.0 }] }, { category: "Team & Youth Sports", rankings: [{ brand: "Dick's Sporting Goods", shareOfVoice: 24.0 }, { brand: b, shareOfVoice: 20.0 }, { brand: "Amazon", shareOfVoice: 14.0 }, { brand: "Walmart", shareOfVoice: 12.0 }, { brand: "Rawlings", shareOfVoice: 8.0 }] }, { category: "Sporting Goods Retail", rankings: [{ brand: "Dick's Sporting Goods", shareOfVoice: 22.0 }, { brand: "Amazon", shareOfVoice: 18.0 }, { brand: b, shareOfVoice: 15.0 }, { brand: "Walmart", shareOfVoice: 12.0 }, { brand: "REI", shareOfVoice: 8.0 }] }], llmBreakdown: { platforms: ["All Platforms", "ChatGPT", "Gemini", "Perplexity", "Copilot", "AI Overviews"], brands: [{ brand: "Dick's Sporting Goods", isPrimary: false, scores: [18.2, 20.1, 17.4, 15.8, 19.3, 22.6] }, { brand: "Amazon", isPrimary: false, scores: [14.6, 16.8, 13.9, 11.2, 15.4, 17.8] }, { brand: "Walmart", isPrimary: false, scores: [11.4, 12.3, 10.8, 9.6, 12.1, 13.5] }, { brand: "Nike", isPrimary: false, scores: [8.9, 8.2, 10.1, 9.4, 8.6, 7.8] }, { brand: b, isPrimary: true, scores: [6.8, 5.2, 6.1, 9.4, 7.8, 4.1] }, { brand: "REI", isPrimary: false, scores: [6.1, 5.9, 7.2, 8.3, 6.0, 4.2] }, { brand: "Under Armour", isPrimary: false, scores: [5.4, 5.9, 4.8, 4.2, 5.6, 5.1] }, { brand: "Bass Pro Shops", isPrimary: false, scores: [2.9, 2.4, 3.5, 4.1, 2.8, 1.9] }] } });
+    setReferenceData(DEMO_LLMO_REFERENCE);
     setIsDemo(true); setCurrentStep(8); setBrand(b);
   };
 
