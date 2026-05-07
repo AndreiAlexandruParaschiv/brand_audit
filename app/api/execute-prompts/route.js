@@ -1,74 +1,76 @@
 // app/api/execute-prompts/route.js
-import { callLLM, extractProviderConfig } from "../../../lib/llm.js";
-import { webSearch } from "../../../lib/search.js";
+import { submitJob, waitForCompletion, downloadResult, getAvailableProviders, normalizeProviderResults } from "../../../lib/drs.js";
+import { lookupSiteMetadata } from "../../../lib/llmo.js";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export async function POST(req) {
   const body = await req.json();
-  const { prompts } = body;
+  const { prompts, brand, region } = body;
 
   if (!prompts?.length) {
     return Response.json({ error: "Prompts array is required." }, { status: 400 });
   }
+  if (!brand?.trim()) {
+    return Response.json({ error: "Brand is required for site metadata lookup." }, { status: 400 });
+  }
 
-  const providerConfig = extractProviderConfig(body);
-  const CONCURRENCY = 5;
-  const results = [];
-  let totalFailed = 0;
-  let searchCount = 0;
+  let metadata;
+  try {
+    metadata = await lookupSiteMetadata(brand);
+  } catch (e) {
+    console.error("LLMO site lookup error:", e);
+    return Response.json({ error: e.message }, { status: 400 });
+  }
 
-  // Process prompts in batches of CONCURRENCY
-  for (let i = 0; i < prompts.length; i += CONCURRENCY) {
-    const batch = prompts.slice(i, i + CONCURRENCY);
+  const providers = getAvailableProviders();
+  const drsPrompts = prompts.map((p, i) => ({ prompt: p.prompt, index: i }));
 
-    const batchResults = await Promise.allSettled(
-      batch.map(async (p) => {
-        // Web search for each prompt to ground answers in real data
-        const searchResult = await webSearch(p.prompt, 5);
-        const searchContext = searchResult?.context;
-        const sources = searchResult?.sources ?? [];
-        if (searchContext) searchCount++;
-
-        const systemContent = searchContext
-          ? `You are a knowledgeable assistant. Use the following web search results as your primary source of facts:\n\n${searchContext}\n\nAnswer the user's question thoroughly and naturally. Where relevant, reference the source by publication name inline (e.g. "according to Wirecutter" or "Runner's World recommends"). Mention specific brand names, product names, and where to buy. Be helpful and direct.`
-          : `You are a knowledgeable assistant. Answer the user's question thoroughly. Mention specific brand names, product names, and where to buy. Be helpful and direct.`;
-
-        const messages = [
-          { role: "system", content: systemContent },
-          { role: "user", content: p.prompt },
-        ];
-
-        const answer = await callLLM({
-          messages,
-          providerConfig,
-          options: { maxTokens: 2048 },
-        });
-
-        return {
-          category: p.category,
-          topic: p.topic,
-          prompt: p.prompt,
-          answer,
-          sources,
-        };
+  try {
+    const settled = await Promise.allSettled(
+      providers.map(async (providerKey) => {
+        const jobId = await submitJob({ providerKey, prompts: drsPrompts, metadata, country: region });
+        const completedJob = await waitForCompletion(jobId);
+        if (!completedJob.result_url) {
+          throw new Error(`DRS job ${jobId} completed but no result_url was returned.`);
+        }
+        const drsResults = await downloadResult(completedJob.result_url);
+        return { providerKey, jobId, drsResults };
       })
     );
 
-    for (const r of batchResults) {
-      if (r.status === "fulfilled") {
-        results.push(r.value);
-      } else {
-        totalFailed++;
-        console.error("Prompt execution failed:", r.reason?.message);
-      }
-    }
-  }
+    const allResults = [];
+    const jobIds = {};
+    const succeededProviders = [];
 
-  return Response.json({
-    results,
-    totalRequested: prompts.length,
-    totalSucceeded: results.length,
-    totalFailed,
-    webSearchUsed: searchCount > 0,
-    webSearchCount: searchCount,
-  });
+    for (const outcome of settled) {
+      if (outcome.status === "rejected") {
+        console.error("DRS provider failed:", outcome.reason);
+        continue;
+      }
+      const { providerKey, jobId, drsResults } = outcome.value;
+      jobIds[providerKey] = jobId;
+      succeededProviders.push(providerKey);
+
+      allResults.push(...normalizeProviderResults({ providerKey, drsResults, prompts }));
+    }
+
+    const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
+    const debugPath = join(process.cwd(), `drs-results-${timestamp}.json`);
+    await writeFile(debugPath, JSON.stringify(allResults, null, 2));
+    console.log(`DRS aggregated results written to ${debugPath}`);
+
+    const totalRequested = prompts.length * providers.length;
+    return Response.json({
+      results: allResults,
+      totalRequested,
+      totalSucceeded: allResults.length,
+      totalFailed: totalRequested - allResults.length,
+      providers: succeededProviders,
+      jobIds,
+    });
+  } catch (e) {
+    console.error("Execute prompts (DRS) error:", e);
+    return Response.json({ error: e.message }, { status: 500 });
+  }
 }

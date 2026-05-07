@@ -20,6 +20,15 @@ const DEMO_STEPS = [
   "Off-Site Insights",
 ];
 
+const PROVIDER_LABELS = {
+  chatgpt_free: "ChatGPT",
+  google_aimode: "Google AI Mode",
+  google_ai_overviews: "Google AI Overviews",
+  gemini: "Gemini",
+  copilot: "Copilot",
+  perplexity: "Perplexity",
+};
+
 const BRAND_COLORS = [
   "#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8b5cf6",
   "#ec4899", "#06b6d4", "#f97316", "#6366f1", "#14b8a6",
@@ -423,6 +432,7 @@ export default function BrandAudit() {
   const [collapsedSections, setCollapsedSections] = useState({});
   const [expandedCategories, setExpandedCategories] = useState({});
   const [isDemo, setIsDemo] = useState(false);
+  const [activeProvider, setActiveProvider] = useState(null);
   const [region, setRegion] = useState("US");
   const [referenceData, setReferenceData] = useState(null);
 
@@ -434,7 +444,7 @@ export default function BrandAudit() {
 
   const runPipeline = async () => {
     if (!brand.trim()) return;
-    setLoading(true); setIsDemo(false); setDiscovery(null); setMarket(null); setPrompts(null); setResults(null); setAnalysis(null); setError(null); setCollapsedSections({}); setExpandedCategories({});
+    setLoading(true); setIsDemo(false); setDiscovery(null); setMarket(null); setPrompts(null); setResults(null); setAnalysis(null); setError(null); setCollapsedSections({}); setExpandedCategories({}); setActiveProvider(null);
     try {
       setCurrentStep(0);
       const disc = await callAPI("/api/discover", { brand: brand.trim(), region });
@@ -446,7 +456,7 @@ export default function BrandAudit() {
       const prm = await callAPI("/api/generate-prompts", { industry: disc.industry, categories: mkt.categories, region });
       setPrompts(prm);
       setCurrentStep(3);
-      const execResults = await callAPI("/api/execute-prompts", { prompts: prm.prompts });
+      const execResults = await callAPI("/api/execute-prompts", { prompts: prm.prompts, brand: brand.trim(), region });
       setResults(execResults);
       setCurrentStep(4);
       const sov = await callAPI("/api/analyze-sov", { brand: brand.trim(), results: execResults.results });
@@ -892,7 +902,7 @@ export default function BrandAudit() {
             </SectionCard>
 
             {/* Prompt Results */}
-            <SectionCard accentColor="#0891b2" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>} title={results ? `Prompt Results (${results.totalSucceeded}/${results.totalRequested} completed)` : "Prompt Results"} badge={null} isOpen={isSectionOpen("results")} onToggle={() => toggleSection("results")} loading={!results && currentStep >= 3} loadingText="Executing prompts...">
+            <SectionCard accentColor="#0891b2" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>} title={results ? `Prompt Results (${results.totalSucceeded}/${results.totalRequested} completed)` : "Prompt Results"} badge={results?.providers?.length ? `${results.providers.length} provider${results.providers.length > 1 ? "s" : ""}` : null} isOpen={isSectionOpen("results")} onToggle={() => toggleSection("results")} loading={!results && currentStep >= 3} loadingText="Executing prompts across LLM providers...">
               {results && market && market.categories?.map((cat, ci) => {
                 const catResults = results.results?.filter(r => r.category === cat.name) || [];
                 if (!catResults.length) return null;
@@ -911,7 +921,10 @@ export default function BrandAudit() {
                               return (
                                 <div key={ri} style={{ borderRadius: 10, border: "1px solid #e2e8f0", overflow: "hidden" }}>
                                   <button onClick={() => toggleCategory(key)} style={{ background: "#f8fafc", padding: "10px 14px", border: "none", borderBottom: answerOpen ? "1px solid #e2e8f0" : "none", width: "100%", textAlign: "left", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                                    <span style={{ fontSize: 13, color: "#475569", fontFamily: "'DM Sans', sans-serif" }}>{r.prompt}</span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                                      {r.provider && <span style={{ fontSize: 10, color: "#6366f1", background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 4, padding: "2px 6px", fontWeight: 700, flexShrink: 0, whiteSpace: "nowrap" }}>{PROVIDER_LABELS[r.provider] || r.provider}</span>}
+                                      <span style={{ fontSize: 13, color: "#475569", fontFamily: "'DM Sans', sans-serif" }}>{r.prompt}</span>
+                                    </div>
                                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ flexShrink: 0, transform: answerOpen ? "rotate(0)" : "rotate(-90deg)", transition: "transform 0.2s" }}><path d="M2 3.5l3 3 3-3" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                                   </button>
                                   {answerOpen && (
@@ -934,66 +947,95 @@ export default function BrandAudit() {
 
           {/* Full-Width: Share of Voice */}
           <SectionCard accentColor="#059669" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>} title="Share of Voice" isOpen={isSectionOpen("sov")} onToggle={() => toggleSection("sov")} loading={!analysis && currentStep >= 4} loadingText="Computing rankings...">
-            {analysis && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>Overall Rankings</span>
-                    <span style={{ fontSize: 12, color: "#94a3b8" }}>Mentions</span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {analysis.rankings?.map((r, i) => {
-                      const barColor = hashColor(r.brand, BRAND_COLORS);
-                      return (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: r.isPrimary ? "8px 12px" : "6px 0", background: r.isPrimary ? "#eff6ff" : "transparent", borderRadius: r.isPrimary ? 10 : 0, border: r.isPrimary ? "1px solid #bfdbfe" : "none" }}>
-                          <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, width: 26, flexShrink: 0 }}>#{i + 1}</span>
-                          <BrandLogo brand={r.brand} size={28} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                              <span style={{ fontSize: 14, fontWeight: 600, color: r.isPrimary ? "#2563eb" : "#1e293b" }}>{r.brand}</span>
-                              {r.isPrimary && <span style={{ fontSize: 10, color: "#2563eb", background: "#dbeafe", padding: "2px 6px", borderRadius: 4, fontWeight: 700, border: "1px solid #bfdbfe" }}>YOU</span>}
-                            </div>
-                            <div style={{ background: "#e2e8f0", borderRadius: 4, height: 6, overflow: "hidden" }}>
-                              <div style={{ width: `${Math.min(r.shareOfVoice * 2.5, 100)}%`, height: "100%", background: barColor, borderRadius: 4, transition: "width 0.5s" }} />
-                            </div>
-                          </div>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: "#475569", width: 50, textAlign: "right", flexShrink: 0 }}>{r.shareOfVoice.toFixed(1)}%</span>
-                          <span style={{ fontSize: 13, color: "#94a3b8", width: 30, textAlign: "right", flexShrink: 0 }}>{r.mentions}</span>
+            {analysis && (() => {
+              const providerData = analysis.providerAnalyses;
+              const sovData = providerData
+                ? providerData[activeProvider] || null
+                : analysis;
+              const providerKeys = providerData ? Object.keys(providerData) : [];
+
+              return (
+                <>
+                  {providerKeys.length > 1 && (
+                    <div style={{ display: "flex", gap: 4, marginBottom: 20, flexWrap: "wrap" }}>
+                      {providerKeys.map((pk) => (
+                        <button key={pk} onClick={() => setActiveProvider(pk)} style={{
+                          background: pk === activeProvider ? "#2563eb" : "#f1f5f9",
+                          color: pk === activeProvider ? "#fff" : "#475569",
+                          border: pk === activeProvider ? "1px solid #2563eb" : "1px solid #dde3ea",
+                          borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                          cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s",
+                        }}>
+                          {PROVIDER_LABELS[pk] || pk}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {sovData ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>Overall Rankings</span>
+                          <span style={{ fontSize: 12, color: "#94a3b8" }}>Mentions</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Category Breakdown</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {analysis.categoryBreakdown?.map((cb, i) => (
-                      <div key={i} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 10 }}>{cb.category}</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {cb.rankings?.slice(0, 5).map((r, j) => {
-                            const isYou = r.brand.toLowerCase() === brand.trim().toLowerCase();
+                          {sovData.rankings?.map((r, i) => {
                             const barColor = hashColor(r.brand, BRAND_COLORS);
                             return (
-                              <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <BrandLogo brand={r.brand} size={22} />
-                                <span style={{ fontSize: 13, fontWeight: 600, color: isYou ? "#2563eb" : "#1e293b", flex: 1 }}>
-                                  {r.brand}{isYou && <span style={{ fontSize: 9, color: "#2563eb", background: "#dbeafe", padding: "1px 5px", borderRadius: 3, fontWeight: 700, marginLeft: 5 }}>YOU</span>}
-                                </span>
-                                <div style={{ width: 80, background: "#e2e8f0", borderRadius: 3, height: 5, overflow: "hidden" }}>
-                                  <div style={{ width: `${Math.min((r.shareOfVoice ?? 0) * 2, 100)}%`, height: "100%", background: barColor, borderRadius: 3 }} />
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: r.isPrimary ? "8px 12px" : "6px 0", background: r.isPrimary ? "#eff6ff" : "transparent", borderRadius: r.isPrimary ? 10 : 0, border: r.isPrimary ? "1px solid #bfdbfe" : "none" }}>
+                                <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 700, width: 26, flexShrink: 0 }}>#{i + 1}</span>
+                                <BrandLogo brand={r.brand} size={28} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: r.isPrimary ? "#2563eb" : "#1e293b" }}>{r.brand}</span>
+                                    {r.isPrimary && <span style={{ fontSize: 10, color: "#2563eb", background: "#dbeafe", padding: "2px 6px", borderRadius: 4, fontWeight: 700, border: "1px solid #bfdbfe" }}>YOU</span>}
+                                  </div>
+                                  <div style={{ background: "#e2e8f0", borderRadius: 4, height: 6, overflow: "hidden" }}>
+                                    <div style={{ width: `${Math.min(r.shareOfVoice * 2.5, 100)}%`, height: "100%", background: barColor, borderRadius: 4, transition: "width 0.5s" }} />
+                                  </div>
                                 </div>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", width: 42, textAlign: "right" }}>{(r.shareOfVoice ?? 0).toFixed(1)}%</span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: "#475569", width: 50, textAlign: "right", flexShrink: 0 }}>{r.shareOfVoice.toFixed(1)}%</span>
+                                <span style={{ fontSize: 13, color: "#94a3b8", width: 30, textAlign: "right", flexShrink: 0 }}>{r.mentions}</span>
                               </div>
                             );
                           })}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Category Breakdown</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          {sovData.categoryBreakdown?.map((cb, i) => (
+                            <div key={i} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" }}>
+                              <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 10 }}>{cb.category}</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                {cb.rankings?.slice(0, 5).map((r, j) => {
+                                  const isYou = r.brand.toLowerCase() === brand.trim().toLowerCase();
+                                  const barColor = hashColor(r.brand, BRAND_COLORS);
+                                  return (
+                                    <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                      <BrandLogo brand={r.brand} size={22} />
+                                      <span style={{ fontSize: 13, fontWeight: 600, color: isYou ? "#2563eb" : "#1e293b", flex: 1 }}>
+                                        {r.brand}{isYou && <span style={{ fontSize: 9, color: "#2563eb", background: "#dbeafe", padding: "1px 5px", borderRadius: 3, fontWeight: 700, marginLeft: 5 }}>YOU</span>}
+                                      </span>
+                                      <div style={{ width: 80, background: "#e2e8f0", borderRadius: 3, height: 5, overflow: "hidden" }}>
+                                        <div style={{ width: `${Math.min((r.shareOfVoice ?? 0) * 2, 100)}%`, height: "100%", background: barColor, borderRadius: 3 }} />
+                                      </div>
+                                      <span style={{ fontSize: 12, fontWeight: 700, color: "#475569", width: 42, textAlign: "right" }}>{(r.shareOfVoice ?? 0).toFixed(1)}%</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: "#94a3b8", fontSize: 14 }}>No analysis data for selected provider.</div>
+                  )}
+                </>
+              );
+            })()}
 
             {/* LLM Platform Breakdown */}
             {analysis?.llmBreakdown && (() => {
