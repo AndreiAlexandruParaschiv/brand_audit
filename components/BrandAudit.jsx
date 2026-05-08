@@ -567,14 +567,67 @@ export default function BrandAudit() {
   const isSectionOpen = (key) => printMode || !collapsedSections[key];
   const toggleCategory = (cat) => setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
 
-  // Trigger browser print → PDF. Flips printMode so all sections + accordions render expanded,
-  // waits for the DOM to settle, then opens the print dialog. Resets after the dialog closes.
-  const handlePrintReport = () => {
+  // Export the live report as a self-contained HTML file. Flips printMode so all sections
+  // + accordions render expanded, then clones the body, strips no-print/interactive controls,
+  // wraps the result in a complete HTML document with embedded styles + Google Fonts, and
+  // triggers a download. Output opens in any browser, looks like the live UI, can be emailed.
+  const handleHtmlReport = () => {
     setPrintMode(true);
     setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrintMode(false), 300);
-    }, 250);
+      try {
+        const bodyClone = document.body.cloneNode(true);
+        // Remove input/pipeline panels, all download buttons, the export button itself
+        bodyClone.querySelectorAll(".no-print").forEach((el) => el.remove());
+        // Strip interactive-only elements that would render dead in static HTML
+        bodyClone.querySelectorAll('button[onclick], input, select, label[for]').forEach((el) => el.remove());
+
+        // Pull every <style> element from the live document so look-and-feel is preserved
+        const liveStyles = Array.from(document.querySelectorAll("style"))
+          .map((el) => el.outerHTML)
+          .join("\n");
+
+        const brandLabel = discovery?.brand || brand || "Brand";
+        const brandSlug = slugifyForFile(brandLabel);
+        const stamp = todayStamp();
+        const generatedAt = new Date().toLocaleString();
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Off-Site Market Discovery — ${brandLabel} — ${stamp}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap">
+${liveStyles}
+<style>
+  body { margin: 0; padding: 0; background: #f4f6f8; font-family: 'DM Sans', sans-serif; }
+  /* Hide any leftover toggles + chevrons; report is fully expanded */
+  button { cursor: default !important; pointer-events: none !important; }
+  /* Static report banner */
+  .__report_meta { max-width: 1200px; margin: 0 auto; padding: 16px 32px; color: #64748b; font-size: 12px; border-bottom: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+<div class="__report_meta">Off-Site Market Discovery report · <strong style="color:#0c1222">${brandLabel}</strong> · generated ${generatedAt}</div>
+${bodyClone.innerHTML}
+</body>
+</html>`;
+
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const href = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = href;
+        a.download = `${brandSlug}-osmd-report-${stamp}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(href), 0);
+      } finally {
+        setTimeout(() => setPrintMode(false), 100);
+      }
+    }, 300);
   };
   const hasData = discovery || market || prompts || results || analysis;
 
@@ -794,11 +847,12 @@ export default function BrandAudit() {
             {(results || analysis) && (
               <button
                 className="no-print"
-                onClick={handlePrintReport}
+                onClick={handleHtmlReport}
+                title="Download a self-contained HTML report — opens in any browser, easy to email or share"
                 style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0c1222", color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Download PDF Report
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download HTML Report
               </button>
             )}
           </div>
