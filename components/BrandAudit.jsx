@@ -699,6 +699,48 @@ export default function BrandAudit() {
     ]);
   };
 
+  // CSV: generated prompts only — one row per prompt
+  const handlePromptsCsv = () => {
+    if (!prompts?.prompts?.length) return;
+    const brandSlug = slugifyForFile(discovery?.brand || brand);
+    const stamp = todayStamp();
+    const rows = prompts.prompts.map((p, i) => ({
+      index: i + 1,
+      category: p.category || "",
+      topic: p.topic || "",
+      prompt: p.prompt || "",
+    }));
+    downloadCsv(`${brandSlug}-prompts-${stamp}.csv`, rows, [
+      { key: "index", header: "index" },
+      { key: "category", header: "category" },
+      { key: "topic", header: "topic" },
+      { key: "prompt", header: "prompt" },
+    ]);
+  };
+
+  // CSV: prompt + answer + cited sources URLs joined — one row per Q&A
+  const handleResultsCsv = () => {
+    if (!results?.results?.length) return;
+    const brandSlug = slugifyForFile(discovery?.brand || brand);
+    const stamp = todayStamp();
+    const rows = results.results.map((r, i) => ({
+      index: i + 1,
+      category: r.category || "",
+      topic: r.topic || "",
+      prompt: r.prompt || "",
+      answer: r.answer || "",
+      sources: (r.sources || []).map((s) => s.url).filter(Boolean).join(" | "),
+    }));
+    downloadCsv(`${brandSlug}-results-${stamp}.csv`, rows, [
+      { key: "index", header: "index" },
+      { key: "category", header: "category" },
+      { key: "topic", header: "topic" },
+      { key: "prompt", header: "prompt" },
+      { key: "answer", header: "answer" },
+      { key: "sources", header: "sources" },
+    ]);
+  };
+
   return (
     <div style={{ fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif", background: "#f4f6f8", minHeight: "100vh", color: "#1e293b" }}>
       <style>{`
@@ -867,6 +909,14 @@ export default function BrandAudit() {
 
             {/* Generated Prompts */}
             <SectionCard accentColor="#d97706" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>} title={prompts ? `Generated Prompts (${prompts.prompts?.length} total)` : "Generated Prompts"} isOpen={isSectionOpen("prompts")} onToggle={() => toggleSection("prompts")} loading={!prompts && currentStep >= 2} loadingText="Generating prompts...">
+              {prompts?.prompts?.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                  <button onClick={handlePromptsCsv} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #d97706", borderRadius: 8, padding: "7px 12px", fontSize: 12, color: "#d97706", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Prompts CSV
+                  </button>
+                </div>
+              )}
               {prompts && market && market.categories?.map((cat, ci) => {
                 const catPrompts = prompts.prompts?.filter(p => p.category === cat.name) || [];
                 if (!catPrompts.length) return null;
@@ -893,6 +943,14 @@ export default function BrandAudit() {
 
             {/* Prompt Results */}
             <SectionCard accentColor="#0891b2" icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>} title={results ? `Prompt Results (${results.totalSucceeded}/${results.totalRequested} completed)` : "Prompt Results"} badge={null} isOpen={isSectionOpen("results")} onToggle={() => toggleSection("results")} loading={!results && currentStep >= 3} loadingText="Executing prompts...">
+              {results?.results?.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                  <button onClick={handleResultsCsv} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", border: "1.5px solid #0891b2", borderRadius: 8, padding: "7px 12px", fontSize: 12, color: "#0891b2", fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Results CSV
+                  </button>
+                </div>
+              )}
               {results && market && market.categories?.map((cat, ci) => {
                 const catResults = results.results?.filter(r => r.category === cat.name) || [];
                 if (!catResults.length) return null;
