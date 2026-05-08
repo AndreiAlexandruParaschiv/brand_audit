@@ -421,10 +421,17 @@ export default function BrandAudit() {
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
   const [collapsedSections, setCollapsedSections] = useState({});
-  const [expandedCategories, setExpandedCategories] = useState({});
+  const [_expandedCategories, setExpandedCategories] = useState({});
   const [isDemo, setIsDemo] = useState(false);
   const [region, setRegion] = useState("US");
   const [referenceData, setReferenceData] = useState(null);
+  const [printMode, setPrintMode] = useState(false);
+
+  // In printMode, expand every section + accordion automatically so the printed PDF includes all content.
+  // The Proxy short-circuits any property read on expandedCategories to `true` without needing template changes.
+  const expandedCategories = printMode
+    ? new Proxy({}, { get: () => true })
+    : _expandedCategories;
 
   const callAPI = async (url, body) => {
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -557,8 +564,18 @@ export default function BrandAudit() {
   };
 
   const toggleSection = (key) => setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
-  const isSectionOpen = (key) => !collapsedSections[key];
+  const isSectionOpen = (key) => printMode || !collapsedSections[key];
   const toggleCategory = (cat) => setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+
+  // Trigger browser print → PDF. Flips printMode so all sections + accordions render expanded,
+  // waits for the DOM to settle, then opens the print dialog. Resets after the dialog closes.
+  const handlePrintReport = () => {
+    setPrintMode(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setPrintMode(false), 300);
+    }, 250);
+  };
   const hasData = discovery || market || prompts || results || analysis;
 
   // Cited Sources — aggregate URLs returned by execute-prompts, filtered by brand-owned domains.
@@ -750,18 +767,44 @@ export default function BrandAudit() {
         input::placeholder { color: #b0b8c4; }
         input:focus { border-color: #2563eb !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.08) !important; }
         button:hover:not(:disabled) { filter: brightness(0.95); }
+
+        /* Print-to-PDF stylesheet — engaged when the user clicks Download PDF Report. */
+        @media print {
+          @page { size: Letter; margin: 0.5in; }
+          body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .no-print { display: none !important; }
+          .section-card, .pdf-section { break-inside: avoid; page-break-inside: avoid; box-shadow: none !important; border: 1px solid #e2e8f0 !important; }
+          .pdf-page-break { page-break-before: always; }
+          a { color: #0ea5e9 !important; text-decoration: underline !important; }
+          /* Hide all collapse arrows and toggle buttons in print */
+          button[aria-label="toggle"], svg[data-toggle-arrow] { display: none !important; }
+          /* Force animations off so content is stable for print */
+          *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
       `}</style>
 
       {/* Header */}
       <div style={{ padding: "32px 32px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#0c1222", margin: 0, letterSpacing: -0.5 }}>Off-Site Market Discovery</h1>
-            <p style={{ color: "#8896a7", fontSize: 14, margin: "6px 0 0", letterSpacing: 0.1 }}>Off-site brand visibility, AI share of voice & competitive landscape</p>
+          <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#0c1222", margin: 0, letterSpacing: -0.5 }}>Off-Site Market Discovery</h1>
+              <p style={{ color: "#8896a7", fontSize: 14, margin: "6px 0 0", letterSpacing: 0.1 }}>Off-site brand visibility, AI share of voice & competitive landscape</p>
+            </div>
+            {(results || analysis) && (
+              <button
+                className="no-print"
+                onClick={handlePrintReport}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0c1222", color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Download PDF Report
+              </button>
+            )}
           </div>
 
           {/* Input + Pipeline row */}
-          <div style={{ display: "flex", gap: 20, marginBottom: 24, alignItems: "stretch" }}>
+          <div className="no-print" style={{ display: "flex", gap: 20, marginBottom: 24, alignItems: "stretch" }}>
             <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e8ecf1", padding: "22px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02)", width: 360, flexShrink: 0 }}>
               <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
                 <div style={{ flex: 1 }}>
