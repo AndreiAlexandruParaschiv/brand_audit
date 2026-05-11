@@ -64,3 +64,4 @@ Configure in `.env.local` (not committed):
 | `AZURE_API_VERSION` | Azure | API version |
 | `AZURE_COMPLETION_DEPLOYMENT` | Azure | Deployment name |
 | `TAVILY_API_KEY` | Tavily | Web search API key (optional, enables real-time grounding) |
+| `TAVILY_API_KEY_BACKUP` | Tavily | Optional fallback key — used automatically when the primary returns auth/quota/network errors |
