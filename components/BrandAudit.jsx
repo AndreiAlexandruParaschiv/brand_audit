@@ -433,10 +433,22 @@ export default function BrandAudit() {
     ? new Proxy({}, { get: () => true })
     : _expandedCategories;
 
+  // Defensive: read body as text first, then try to parse as JSON.
+  // This avoids the cryptic "Unexpected token 'A', 'An error o'... is not valid JSON" failures
+  // that happen when the server returns a plain-text error (e.g. Lambda timeout, 502 from
+  // the platform's edge, malformed body). Surfaces the actual response text instead.
   const callAPI = async (url, body) => {
     const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Request failed"); }
-    return res.json();
+    const raw = await res.text();
+    let data;
+    try { data = raw ? JSON.parse(raw) : null; }
+    catch {
+      const snippet = (raw || "").trim().slice(0, 200);
+      const prefix = res.ok ? "Server returned non-JSON response" : `Server error ${res.status}`;
+      throw new Error(snippet ? `${prefix}: ${snippet}` : `${prefix} (empty body)`);
+    }
+    if (!res.ok) throw new Error(data?.error || `Request failed (HTTP ${res.status})`);
+    return data;
   };
 
   const runPipeline = async () => {

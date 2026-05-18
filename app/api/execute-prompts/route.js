@@ -51,7 +51,24 @@ function dedupSources(sources) {
 }
 
 export async function POST(req) {
-  const body = await req.json();
+  try {
+    return await handleExecutePrompts(req);
+  } catch (e) {
+    console.error("execute-prompts route crashed:", e);
+    return Response.json(
+      { error: e?.message || "Internal server error in /api/execute-prompts" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleExecutePrompts(req) {
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
   const { prompts } = body;
 
   if (!prompts?.length) {
