@@ -567,21 +567,26 @@ export default function BrandAudit() {
   const isSectionOpen = (key) => printMode || !collapsedSections[key];
   const toggleCategory = (cat) => setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
 
-  // Export the live report as a self-contained HTML file. Flips printMode so all sections
-  // + accordions render expanded, then clones the body, strips no-print/interactive controls,
-  // wraps the result in a complete HTML document with embedded styles + Google Fonts, and
-  // triggers a download. Output opens in any browser, looks like the live UI, can be emailed.
+  // Export the live report as a self-contained, INTERACTIVE HTML file.
+  // - Flips printMode so all sections + accordions render expanded at capture time
+  // - Clones the body, strips dead-in-static controls (download buttons, file inputs)
+  // - Embeds the live styles + a vanilla-JS toggle script so collapse/expand works
+  //   in the recipient's browser without React or any other dependency
   const handleHtmlReport = () => {
     setPrintMode(true);
     setTimeout(() => {
       try {
         const bodyClone = document.body.cloneNode(true);
-        // Remove input/pipeline panels, all download buttons, the export button itself
+        // Drop the no-print layer (input form, pipeline progress, the export button itself)
         bodyClone.querySelectorAll(".no-print").forEach((el) => el.remove());
-        // Strip interactive-only elements that would render dead in static HTML
-        bodyClone.querySelectorAll('button[onclick], input, select, label[for]').forEach((el) => el.remove());
+        // Remove dead-in-static controls: CSV/PDF download buttons, "Replace CSV", "Choose CSV file"
+        bodyClone.querySelectorAll("button").forEach((btn) => {
+          const txt = (btn.textContent || "").trim();
+          if (/^(Download |Replace |Choose )/i.test(txt)) btn.remove();
+        });
+        bodyClone.querySelectorAll("input, select, label[for]").forEach((el) => el.remove());
 
-        // Pull every <style> element from the live document so look-and-feel is preserved
+        // Pull every <style> tag from the live document so look-and-feel is preserved exactly
         const liveStyles = Array.from(document.querySelectorAll("style"))
           .map((el) => el.outerHTML)
           .join("\n");
@@ -590,6 +595,40 @@ export default function BrandAudit() {
         const brandSlug = slugifyForFile(brandLabel);
         const stamp = todayStamp();
         const generatedAt = new Date().toLocaleString();
+
+        // Vanilla-JS toggle handler. Finds every button containing a chevron SVG
+        // (identified by `transform: rotate(...)` inline style — that's how the live UI
+        // marks accordion arrows) and attaches a click handler that hides/shows the
+        // next sibling element. No framework, no build step, no external deps.
+        const toggleScript = `
+<script>
+(function() {
+  function findChevron(btn) {
+    var svgs = btn.querySelectorAll('svg');
+    for (var i = 0; i < svgs.length; i++) {
+      var s = (svgs[i].getAttribute('style') || '');
+      if (s.indexOf('rotate') !== -1) return svgs[i];
+    }
+    return null;
+  }
+  function init() {
+    document.querySelectorAll('button').forEach(function(btn) {
+      var chevron = findChevron(btn);
+      if (!chevron) return;
+      var content = btn.nextElementSibling;
+      if (!content) return;
+      btn.style.cursor = 'pointer';
+      btn.addEventListener('click', function() {
+        var isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? '' : 'none';
+        chevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>`;
 
         const html = `<!DOCTYPE html>
 <html lang="en">
@@ -603,15 +642,13 @@ export default function BrandAudit() {
 ${liveStyles}
 <style>
   body { margin: 0; padding: 0; background: #f4f6f8; font-family: 'DM Sans', sans-serif; }
-  /* Hide any leftover toggles + chevrons; report is fully expanded */
-  button { cursor: default !important; pointer-events: none !important; }
-  /* Static report banner */
   .__report_meta { max-width: 1200px; margin: 0 auto; padding: 16px 32px; color: #64748b; font-size: 12px; border-bottom: 1px solid #e2e8f0; }
 </style>
 </head>
 <body>
 <div class="__report_meta">Off-Site Market Discovery report · <strong style="color:#0c1222">${brandLabel}</strong> · generated ${generatedAt}</div>
 ${bodyClone.innerHTML}
+${toggleScript}
 </body>
 </html>`;
 
